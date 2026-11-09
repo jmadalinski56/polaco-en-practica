@@ -51,7 +51,7 @@ body {
 button { font: inherit; color: inherit; }
 #app { max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; }
 
-.top { text-align: center; margin-bottom: 20px; position: relative; }
+.top { text-align: center; margin-bottom: 14px; position: relative; }
 .top h1 { margin: 0 0 4px; padding: 0 48px; font-size: 1.7rem; letter-spacing: -0.02em; }
 .top p { margin: 0; color: var(--muted); font-size: 0.95rem; }
 .theme-toggle {
@@ -59,8 +59,15 @@ button { font: inherit; color: inherit; }
   border: 1px solid var(--border); background: var(--card); font-size: 1.1rem; cursor: pointer;
 }
 
+.sticky-nav { position: sticky; top: 0; z-index: 30; background: var(--bg); margin: 0 -16px 16px; padding: 8px 16px;
+  border-bottom: 1px solid var(--border); }
 .section-switch { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: var(--card);
-  border: 1px solid var(--border); border-radius: 14px; padding: 5px; margin-bottom: 20px; }
+  border: 1px solid var(--border); border-radius: 14px; padding: 5px; }
+.sub-nav { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.sub-nav[hidden] { display: none; }
+.sub-nav .btn { white-space: nowrap; }
+.crumb { flex: 1; min-width: 0; text-align: center; font-size: 0.85rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#drillCard { scroll-margin-top: 130px; }
 .section-btn { border: 0; background: transparent; padding: 9px 6px; border-radius: 10px; font-weight: 600;
   cursor: pointer; font-size: 0.95rem; }
 .section-btn.active { background: var(--accent); color: #fff; }
@@ -132,7 +139,6 @@ button { font: inherit; color: inherit; }
 .link-back { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 4px 0; font-size: 0.92rem; }
 .link-back:hover { color: var(--accent); }
 
-.drill-top { display: flex; justify-content: space-between; }
 .drill-head { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; }
 .drill-head h2 { margin: 0; font-size: 1.3rem; }
 .badge { background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; font-size: 0.8rem; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
@@ -279,12 +285,19 @@ button { font: inherit; color: inherit; }
     <p>Frases y palabras para la vida diaria y el trabajo · 3 niveles · escucha, repite y habla</p>
   </header>
 
-  <div class="section-switch">
-    <button class="section-btn active" data-section="phrases" type="button">🗣️ Frases</button>
-    <button class="section-btn" data-section="words" type="button">🃏 Palabras</button>
-    <button class="section-btn" data-section="sounds" type="button">🔤 Sonidos</button>
-    <button class="section-btn" data-section="progress" type="button">📈 Progreso</button>
-  </div>
+  <nav class="sticky-nav" aria-label="Menú">
+    <div class="section-switch">
+      <button class="section-btn active" data-section="phrases" type="button">🗣️ Frases</button>
+      <button class="section-btn" data-section="words" type="button">🃏 Palabras</button>
+      <button class="section-btn" data-section="sounds" type="button">🔤 Sonidos</button>
+      <button class="section-btn" data-section="progress" type="button">📈 Progreso</button>
+    </div>
+    <div class="sub-nav" id="subNav" hidden>
+      <button class="btn btn-small" id="drillBack" type="button">← Temas</button>
+      <span class="crumb" id="crumb"></span>
+      <button class="btn btn-small" id="drillEnd" type="button">■ Terminar</button>
+    </div>
+  </nav>
 
   <!-- FRASES: INICIO -->
   <section id="view-phrases" class="view active">
@@ -309,10 +322,6 @@ button { font: inherit; color: inherit; }
 
   <!-- EJERCICIO -->
   <section id="view-drill" class="view">
-    <div class="drill-top">
-      <button class="link-back" id="drillBack" type="button">← Volver</button>
-      <button class="link-back" id="drillEnd" type="button">Terminar ■</button>
-    </div>
     <div class="drill-head"><span class="badge" id="drillBadge"></span><h2 id="drillTitle"></h2></div>
     <div class="drill-pattern" id="drillPattern"></div>
     <div class="drill-note" id="drillNote"></div>
@@ -1782,11 +1791,25 @@ async function startSpeech() {
    NAVEGACIÓN
    ========================================================================= */
 let currentSection = "phrases";
+const SECTION_NAME = { phrases: "Frases", words: "Palabras", sounds: "Sonidos", progress: "Progreso" };
+const BACK_LABEL = { phrases: "← Temas", words: "← Palabras", sounds: "← Sonidos", progress: "← Progreso" };
 function switchView(name) {
   document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + name));
+  // barra fija con «volver» y la ruta (Frases › 🟡 Intermedio) durante el ejercicio y el resumen
+  const inSession = name === "drill" || name === "done";
+  $("subNav").hidden = !inSession;
+  $("drillEnd").hidden = name !== "drill";
+  if (inSession && session) {
+    $("drillBack").textContent = BACK_LABEL[currentSection] || "← Volver";
+    $("crumb").textContent = [SECTION_NAME[currentSection], session.levelName].filter(Boolean).join(" › ");
+  }
   window.scrollTo(0, 0);
 }
 function showSection(sec) {
+  // salir de un ejercicio desde el menú: cerramos micrófono y voz
+  killRecognition();
+  stopRecorder();
+  session = null;
   currentSection = sec;
   document.querySelectorAll(".section-btn").forEach((b) => b.classList.toggle("active", b.dataset.section === sec));
   stopSpeech();
@@ -1846,7 +1869,7 @@ function startStructure(id) {
   const drills = buildDrills(found.st);
   lastStart = () => startStructure(id);
   session = newSession({
-    title: found.st.title, badge: found.level.name.split(" ")[0] + " " + found.level.tag, pattern: found.st.pattern, note: found.st.note,
+    title: found.st.title, badge: found.level.name.split(" ")[0] + " " + found.level.tag, levelName: found.level.name, pattern: found.st.pattern, note: found.st.note,
     queue: buildQueue(drills, prefs.len), pool: drills, structId: id
   });
   beginSession();
@@ -2126,6 +2149,8 @@ function renderFeedback(r, ok, extra) {
 
 function nextDrill() {
   if (!session) return;
+  const cardEl = $("drillCard");
+  if (cardEl && cardEl.getBoundingClientRect().top < 0) setTimeout(() => cardEl.scrollIntoView({ block: "start" }), 0);
   killRecognition();
   stopRecorder();
   if (myVoiceAudio) myVoiceAudio.pause();
@@ -2213,7 +2238,7 @@ function startDeck(id) {
   const lv = LEVELS.find((l) => l.id === deck.level);
   lastStart = () => startDeck(id);
   session = newSession({
-    kind: "words", title: deck.title, badge: lv ? lv.name.split(" ")[0] + " " + lv.tag : "⭐",
+    kind: "words", title: deck.title, badge: lv ? lv.name.split(" ")[0] + " " + lv.tag : "⭐", levelName: lv ? lv.name : "⭐ Mis palabras",
     pattern: "", note: WMODE_DESC[prefs.wmode], queue: shuffle(drills), pool: drills, mode: wmodeToMode(prefs.wmode)
   });
   beginSession();
@@ -2563,7 +2588,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-$("drillBack").addEventListener("click", () => { stopSpeech(); killRecognition(); stopRecorder(); session = null; showSection(currentSection); });
+$("drillBack").addEventListener("click", () => showSection(currentSection));
 $("drillEnd").addEventListener("click", () => { stopSpeech(); killRecognition(); stopRecorder(); if (session) finishSession(); });
 $("doneRepeat").addEventListener("click", () => { if (lastStart) lastStart(); });
 $("doneHome").addEventListener("click", () => showSection(currentSection));
