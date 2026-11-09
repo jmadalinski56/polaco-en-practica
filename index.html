@@ -157,6 +157,7 @@ button { font: inherit; color: inherit; }
 .phon::before { content: "🗣️ "; font-style: normal; font-size: 0.85em; }
 .word { cursor: pointer; border-radius: 6px; padding: 0 2px; transition: background 0.15s; }
 .word:hover { background: var(--accent-soft); }
+.word.reading { background: var(--accent); color: #fff; }
 .w-ok { color: var(--good); }
 .w-close { color: var(--warn); background: var(--warn-bg); }
 .w-miss { color: var(--bad); background: var(--bad-bg); text-decoration: underline wavy; text-underline-offset: 4px; }
@@ -1505,13 +1506,11 @@ function pickPolishVoice() {
 }
 let noVoiceWarned = false;
 let ttsCurrent = null;
-function speak(text, opts) {
-  opts = opts || {};
-  const synth = window.speechSynthesis;
-  if (!text) return;
-  if (!synth || typeof SpeechSynthesisUtterance === "undefined") { toast("🔇 Este navegador no puede leer en voz alta. Prueba con Chrome, Edge o Safari."); return; }
-  try {
-    synth.cancel();
+let speakSeq = 0;   // cada llamada nueva anula la lectura lenta anterior
+
+// Una sola locución; devuelve una promesa que se resuelve al terminar.
+function sayOnce(text, rate, btn) {
+  return new Promise((resolve) => {
     const u = new SpeechSynthesisUtterance(text);
     const voice = pickPolishVoice();
     if (voice) { u.voice = voice; u.lang = voice.lang; }
@@ -1522,16 +1521,111 @@ function speak(text, opts) {
         toast("No encontré una voz polaca en tu dispositivo. Mac: Ajustes → Accesibilidad → Contenido leído → Voz del sistema → Gestionar voces → Polaco (Zosia). Windows: Configuración → Hora e idioma → Voz → Agregar voces → Polski.", 12000);
       }
     }
-    u.rate = opts.slow ? 0.6 : settings.rate;
-    const btn = opts.btn ? $(opts.btn) : null;
+    u.rate = rate;
     u.onstart = () => { if (btn) btn.classList.add("speaking"); };
-    u.onend = () => { if (btn) btn.classList.remove("speaking"); };
+    u.onend = () => { if (btn) btn.classList.remove("speaking"); resolve(true); };
     u.onerror = (e) => {
       if (btn) btn.classList.remove("speaking");
       if (e && e.error && e.error !== "interrupted" && e.error !== "canceled" && e.error !== "not-allowed") toast("🔇 No se pudo reproducir el audio. Revisa el volumen y que tengas una voz polaca instalada.");
+      resolve(false);
     };
     ttsCurrent = u;
-    synth.speak(u);
+    window.speechSynthesis.speak(u);
+  });
+}
+
+// Divide una palabra polaca en sílabas para la lectura lenta: «dziękuję» → dzię · ku · ję
+function plSyllables(word) {
+  const lw = word.toLowerCase();
+  const units = [];   // {s: letras originales, v: vocal (núcleo), son: sonante}
+  let i = 0;
+  while (i < lw.length) {
+    const r3 = lw.substr(i, 3), r2 = lw.substr(i, 2);
+    let len = 1;
+    if (r3 === "dzi" && isPlVowel(lw[i + 3]) && lw[i + 3] !== "i") len = 3;
+    else if (/^(ci|si|zi|ni)$/.test(r2) && isPlVowel(lw[i + 2]) && lw[i + 2] !== "i") len = 2;
+    else if (/^(sz|cz|rz|ch|dz|dż|dź)$/.test(r2)) len = 2;
+    const c = lw[i];
+    let v = len === 1 && isPlVowel(c);
+    // «i» entre consonante y vocal solo ablanda (pies, miasto): no es sílaba propia
+    if (v && c === "i" && units.length && !units[units.length - 1].v && isPlVowel(lw[i + 1])) v = false;
+    const lowS = lw.substr(i, len);
+    units.push({ s: word.substr(i, len), v, glide: !v && lowS === "i", liq: /^(r|l|ł|rz|w)$/.test(lowS) });
+    i += len;
+  }
+  const nuc = [];
+  units.forEach((u, k) => { if (u.v) nuc.push(k); });
+  if (nuc.length < 2) return [word];
+  const cuts = [];
+  for (let n = 0; n < nuc.length - 1; n++) {
+    const a = nuc[n], b = nuc[n + 1];
+    const cons = [];
+    for (let k = a + 1; k < b; k++) if (!units[k].glide) cons.push(k);
+    if (cons.length <= 1) { cuts.push(a + 1); continue; }          // ko·za, ro·zu·miem
+    // grupo de consonantes: la última pasa a la sílaba siguiente (mias·to, wszyst·ko, her·ba·ta),
+    // junto con la anterior si forman pareja tipo «br», «kł», «trz» (Szcze·brze, Wro·cła·wiu)
+    let cut = cons[cons.length - 1];
+    const prev = cons[cons.length - 2];
+    if (units[cut].liq && prev === cut - 1 && !units[prev].liq && !/^(m|n|ń|j)$/i.test(units[prev].s)) cut = prev;
+    cuts.push(cut);
+  }
+  const out = [];
+  let start = 0;
+  cuts.concat(units.length).forEach((c) => { out.push(units.slice(start, c).map((u) => u.s).join("")); start = c; });
+  return out;
+}
+
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+function stopSpeech() { speakSeq++; if (window.speechSynthesis) window.speechSynthesis.cancel(); }
+
+// Lectura lenta real: muchas voces (p. ej. Zosia en Mac) casi ignoran rate < 1,
+// así que separamos: frases → palabra por palabra; palabra suelta → sílabas y luego entera.
+async function speakSlow(text, btn, seq) {
+  const words = text.split(/\s+/).filter((w) => /[\p{L}\d]/u.test(w));
+  const hl = (k) => {
+    const spans = document.querySelectorAll("#plText .word");
+    if (spans.length !== words.length) return;
+    spans.forEach((s, j) => s.classList.toggle("reading", j === k));
+  };
+  if (btn) btn.classList.add("speaking");
+  try {
+    if (words.length > 1) {
+      for (let k = 0; k < words.length; k++) {
+        if (seq !== speakSeq) return;
+        hl(k);
+        await sayOnce(words[k].replace(/[.,!?¿¡;:]/g, ""), 0.75, null);
+        await pause(380);
+      }
+    } else {
+      const syl = plSyllables(words[0].replace(/[.,!?¿¡;:]/g, ""));
+      if (syl.length > 1) {
+        for (const s of syl) {
+          if (seq !== speakSeq) return;
+          await sayOnce(s, 0.7, null);
+          await pause(420);
+        }
+        await pause(250);
+      }
+      if (seq !== speakSeq) return;
+      await sayOnce(words[0], 0.75, null);
+    }
+  } finally {
+    hl(-1);
+    if (btn) btn.classList.remove("speaking");
+  }
+}
+
+function speak(text, opts) {
+  opts = opts || {};
+  const synth = window.speechSynthesis;
+  if (!text) return;
+  if (!synth || typeof SpeechSynthesisUtterance === "undefined") { toast("🔇 Este navegador no puede leer en voz alta. Prueba con Chrome, Edge o Safari."); return; }
+  const seq = ++speakSeq;
+  const btn = opts.btn ? $(opts.btn) : null;
+  try {
+    synth.cancel();
+    if (opts.slow) speakSlow(text, btn, seq);
+    else sayOnce(text, settings.rate, btn);
   } catch (e) { toast("🔇 No se pudo reproducir el audio."); }
 }
 
@@ -1575,7 +1669,7 @@ function setStatus(text, cls) {
 
 async function startSpeech() {
   if (!SR || listening) return;
-  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  stopSpeech();
   const mic = $("micBtn");
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
     setStatus("Pidiendo acceso al micrófono…", "live");
@@ -1633,7 +1727,7 @@ function switchView(name) {
 function showSection(sec) {
   currentSection = sec;
   document.querySelectorAll(".section-btn").forEach((b) => b.classList.toggle("active", b.dataset.section === sec));
-  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  stopSpeech();
   if (sec === "phrases") { renderPhrasesHome(); switchView("phrases"); }
   else if (sec === "words") { renderWordsHome(); switchView("words"); }
   else if (sec === "sounds") { renderSounds(); switchView("sounds"); }
@@ -2404,8 +2498,8 @@ document.addEventListener("click", (e) => {
   }
 });
 
-$("drillBack").addEventListener("click", () => { if (window.speechSynthesis) window.speechSynthesis.cancel(); session = null; showSection(currentSection); });
-$("drillEnd").addEventListener("click", () => { if (window.speechSynthesis) window.speechSynthesis.cancel(); if (session) finishSession(); });
+$("drillBack").addEventListener("click", () => { stopSpeech(); session = null; showSection(currentSection); });
+$("drillEnd").addEventListener("click", () => { stopSpeech(); if (session) finishSession(); });
 $("doneRepeat").addEventListener("click", () => { if (lastStart) lastStart(); });
 $("doneHome").addEventListener("click", () => showSection(currentSection));
 
