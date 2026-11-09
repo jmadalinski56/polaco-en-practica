@@ -1057,7 +1057,7 @@ function speak(text, opts) {
     u.onend = () => { if (btn) btn.classList.remove("speaking"); };
     u.onerror = (e) => {
       if (btn) btn.classList.remove("speaking");
-      if (e && e.error && e.error !== "interrupted" && e.error !== "canceled") toast("🔇 No se pudo reproducir el audio. Revisa el volumen y que tengas una voz polaca instalada.");
+      if (e && e.error && e.error !== "interrupted" && e.error !== "canceled" && e.error !== "not-allowed") toast("🔇 No se pudo reproducir el audio. Revisa el volumen y que tengas una voz polaca instalada.");
     };
     ttsCurrent = u;
     synth.speak(u);
