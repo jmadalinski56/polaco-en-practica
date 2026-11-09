@@ -83,6 +83,9 @@ button { font: inherit; color: inherit; }
 .level-tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
 :root[data-theme="dark"] .level-tab.active { color: var(--accent); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .level-tab.active { color: var(--accent); } }
+.level-tab small { display: block; font-weight: 500; font-size: 0.76rem; color: var(--muted); }
+.group-title { font-size: 1rem; margin: 18px 0 8px; }
+.group-title:first-child { margin-top: 4px; }
 .level-desc { text-align: center; color: var(--muted); font-size: 0.9rem; margin: 0 0 14px; }
 
 .struct-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
@@ -259,7 +262,7 @@ button { font: inherit; color: inherit; }
   <header class="top">
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Tema claro / oscuro">🌙</button>
     <h1>Polaco en práctica 🇵🇱</h1>
-    <p>Frases para la vida diaria y el trabajo · escucha, repite y habla</p>
+    <p>Frases para la vida diaria y el trabajo · 3 niveles · escucha, repite y habla</p>
   </header>
 
   <div class="section-switch">
@@ -286,7 +289,7 @@ button { font: inherit; color: inherit; }
     <div id="reviewBox"></div>
     <div class="level-tabs" id="levelTabs"></div>
     <p class="level-desc" id="levelDesc"></p>
-    <div class="struct-grid" id="structGrid"></div>
+    <div id="structGrid"></div>
   </section>
 
   <!-- EJERCICIO -->
@@ -346,7 +349,8 @@ button { font: inherit; color: inherit; }
    templates: { es: "... {a} ...", pl: "... {b} ...", alt: ["... {b} ..."],
                 fills: [[es, pl, plConCifras?]] }
    ========================================================================= */
-const LEVELS = [
+/* ---------- 🟢 BÁSICO (A1) ---------- */
+const A1_GROUPS = [
   {
     id: "base", name: "🌱 Primeros pasos",
     desc: "Cortesía, presentarse y pedir cosas. Lo que necesitas desde el primer día.",
@@ -625,6 +629,248 @@ const LEVELS = [
   }
 ];
 
+/* ---------- 🟡 INTERMEDIO (A2): pasado, futuro, planes, pedir con cortesía ---------- */
+const A2_GROUPS = [
+  {
+    id: "a2vida", name: "🏙️ Vida diaria",
+    structures: [
+      {
+        id: "a2_pasado", title: "Ayer… (pasado)", pattern: "Wczoraj byłem / byłam ___",
+        note: "Pasado: el hombre dice -łem (byłem), la mujer -łam (byłam). Se aceptan las dos. 🔈 La ł suena «u»: byłem = «bɨ́uem».",
+        templates: [{ es: "Ayer {a}.", pl: "Wczoraj {b}.", fills: [
+          ["fui a la tienda", "byłem w sklepie", "byłam w sklepie"],
+          ["trabajé mucho", "dużo pracowałem", "dużo pracowałam"],
+          ["vi una película", "oglądałem film", "oglądałam film"],
+          ["preparé la cena", "ugotowałem kolację", "ugotowałam kolację"],
+          ["llamé a mi mamá", "zadzwoniłem do mamy", "zadzwoniłam do mamy"],
+          ["estaba cansado / cansada", "byłem zmęczony", "byłam zmęczona"],
+          ["me acosté temprano", "wcześnie poszedłem spać", "wcześnie poszłam spać"]] }]
+      },
+      {
+        id: "a2_futuro", title: "Mañana voy a… (futuro)", pattern: "Jutro będę ___ · Jutro zrobię ___",
+        note: "Futuro con «będę» + verbo, o directamente con el verbo perfectivo: zrobię = lo haré. 🔈 «będę» = «bénde»: la primera ę suena «en», la final casi no se oye.",
+        templates: [{ es: "Mañana {a}.", pl: "Jutro {b}.", fills: [
+          ["voy a trabajar", "będę pracować", ["będę pracował", "będę pracowała"]],
+          ["voy a estar en casa", "będę w domu"],
+          ["voy a ir al médico", "pójdę do lekarza"],
+          ["voy a hacer las compras", "zrobię zakupy"],
+          ["voy a llamar al jefe", "zadzwonię do szefa"],
+          ["voy a descansar", "odpocznę"]] }]
+      },
+      {
+        id: "a2_planes", title: "Planes y citas", pattern: "Czy masz czas w ___?",
+        note: "Los días de la semana con «w»: w sobotę, w środę… y «we wtorek» (para no juntar dos w). 🔈 «środę» = «sh'róde»: ś suave.",
+        templates: [{ es: "¿Tienes tiempo el {a}?", pl: "Czy masz czas {b}?", alt: ["Masz czas {b}?"], fills: [
+          ["lunes", "w poniedziałek"], ["martes", "we wtorek"], ["miércoles", "w środę"], ["jueves", "w czwartek"],
+          ["viernes", "w piątek"], ["sábado", "w sobotę"], ["domingo", "w niedzielę"]] }],
+        phrases: [
+          ["¿Vamos por un café?", "Może pójdziemy na kawę?"],
+          ["Lo siento, no puedo", "Niestety nie mogę."],
+          ["Me queda bien", "Pasuje mi."],
+          ["Nos vemos a las seis", "Spotkajmy się o szóstej."],
+          ["Nos vemos el viernes", "Do zobaczenia w piątek."]
+        ]
+      },
+      {
+        id: "a2_salud", title: "Médico y farmacia", pattern: "Od ___ mam gorączkę",
+        note: "«Od» = desde (y la palabra cambia: wczoraj → od wczoraj, tydzień → od tygodnia). 🔈 «gorączkę» = «gorónchke».",
+        templates: [{ es: "Tengo fiebre desde {a}.", pl: "Od {b} mam gorączkę.", fills: [
+          ["ayer", "wczoraj"], ["hace dos días", "dwóch dni"], ["la mañana", "rana"], ["el lunes", "poniedziałku"], ["hace una semana", "tygodnia"]] }],
+        phrases: [
+          ["Quisiera pedir una hora con el médico", "Chciałbym umówić się na wizytę.", ["Chciałabym umówić się na wizytę."]],
+          ["¿Necesito receta?", "Czy potrzebuję recepty?"],
+          ["¿Cuántas veces al día lo tomo?", "Ile razy dziennie mam to brać?"],
+          ["Tengo seguro médico", "Mam ubezpieczenie."]
+        ]
+      },
+      {
+        id: "a2_vivienda", title: "Vivienda", pattern: "Mamy problem z ___",
+        note: "«z» + instrumental: woda → z wodą, internet → z internetem. 🔈 «mieszkanie» = «mieshkáñe».",
+        templates: [{ es: "Tenemos un problema con {a}.", pl: "Mamy problem z {b}.", fills: [
+          ["la calefacción", "ogrzewaniem"], ["el agua caliente", "ciepłą wodą"], ["internet", "internetem"],
+          ["la lavadora", "pralką"], ["la puerta", "drzwiami"], ["los vecinos", "sąsiadami"]] }],
+        phrases: [
+          ["Busco un departamento para alquilar", "Szukam mieszkania do wynajęcia."],
+          ["¿Cuánto es el alquiler?", "Ile wynosi czynsz?"],
+          ["¿Los servicios están incluidos?", "Czy media są wliczone?"],
+          ["¿Cuánto es el depósito?", "Ile wynosi kaucja?"],
+          ["¿Cuándo me puedo mudar?", "Kiedy mogę się wprowadzić?"]
+        ]
+      }
+    ]
+  },
+  {
+    id: "a2trabajo", name: "💼 Trabajo",
+    structures: [
+      {
+        id: "a2_ayuda", title: "Pedir ayuda con cortesía", pattern: "Czy mógłbyś ___?",
+        note: "Condicional cortés: mógłbyś (a un hombre), mogłabyś (a una mujer), o simplemente «Możesz…?». 🔈 «mógłbyś» = «múgubɨsh'»: ó = u, ł = u.",
+        templates: [{ es: "¿Podrías {a}?", pl: "Czy mógłbyś {b}?", alt: ["Czy mogłabyś {b}?", "Możesz {b}?", "Czy możesz {b}?"], fills: [
+          ["ayudarme", "mi pomóc"], ["mostrarme cómo se hace", "mi pokazać, jak to zrobić"], ["repetirlo más despacio", "powtórzyć wolniej"],
+          ["abrir la puerta", "otworzyć drzwi"], ["llamar al jefe", "zadzwonić do szefa"], ["prestarme un lápiz", "pożyczyć mi długopis"]] }],
+        phrases: [
+          ["¿Te ayudo?", "Mogę pomóc?", ["Czy mogę pomóc?"]],
+          ["Yo lo hago", "Zrobię to."],
+          ["No hay problema", "Nie ma problemu."]
+        ]
+      },
+      {
+        id: "a2_informe", title: "Contar lo que hiciste", pattern: "Już ___ (skończyłem / skończyłam)",
+        note: "«Już» = ya. Verbos perfectivos: la acción está terminada. 🔈 «już» = «iush»: la ż final suena sh.",
+        templates: [{ es: "Ya {a}.", pl: "Już {b}.", fills: [
+          ["limpié la cocina", "posprzątałem kuchnię", "posprzątałam kuchnię"],
+          ["descargué el camión", "rozładowałem ciężarówkę", "rozładowałam ciężarówkę"],
+          ["revisé los pedidos", "sprawdziłem zamówienia", "sprawdziłam zamówienia"],
+          ["envié el correo", "wysłałem maila", "wysłałam maila"],
+          ["terminé el turno", "skończyłem zmianę", "skończyłam zmianę"],
+          ["hablé con el cliente", "rozmawiałem z klientem", "rozmawiałam z klientem"]] }]
+      },
+      {
+        id: "a2_ausencias", title: "Ausencias y retrasos", pattern: "Spóźnię się, bo ___",
+        note: "«bo» = porque. 🔈 «spóźnię się» = «spúzh'ñe sh'e»: dos sonidos suaves seguidos.",
+        phrases: [
+          ["Perdón, voy a llegar tarde porque no pasó el bus", "Przepraszam, spóźnię się, bo autobus nie przyjechał."],
+          ["Tengo licencia médica", "Mam zwolnienie lekarskie."],
+          ["Tengo que quedarme en casa con mi hijo", "Muszę zostać w domu z dzieckiem."],
+          ["¿Puedo cambiar de turno con un compañero?", "Czy mogę zamienić się zmianą z kolegą?"],
+          ["Quisiera tomar vacaciones en agosto", "Chciałbym wziąć urlop w sierpniu.", ["Chciałabym wziąć urlop w sierpniu."]],
+          ["¿Cuántos días de vacaciones me corresponden?", "Ile dni urlopu mi przysługuje?"],
+          ["No puedo venir el sábado", "Nie mogę przyjść w sobotę."]
+        ]
+      },
+      {
+        id: "a2_telefono", title: "Al teléfono", pattern: "Dzwonię w sprawie ___",
+        note: "Por teléfono no hay gestos: la pronunciación clara importa el doble. «w sprawie» = «sobre / por el asunto de». 🔈 «dzwonię» = «dzvóñe».",
+        templates: [{ es: "Llamo por {a}.", pl: "Dzwonię w sprawie {b}.", fills: [
+          ["el trabajo", "pracy"], ["el anuncio", "ogłoszenia"], ["el departamento", "mieszkania"], ["mi sueldo", "wypłaty"], ["la cita", "wizyty"]] }],
+        phrases: [
+          ["¿Aló? (contestando)", "Halo, słucham?"],
+          ["¿Puedo hablar con el gerente?", "Czy mogę rozmawiać z kierownikiem?"],
+          ["Perdón, se escucha mal", "Przepraszam, źle słyszę."],
+          ["¿Puede hablar más fuerte?", "Czy może pan mówić głośniej?", ["Czy może pani mówić głośniej?"]],
+          ["Lo llamo más tarde", "Oddzwonię później."],
+          ["Número equivocado", "Pomyłka."]
+        ]
+      }
+    ]
+  }
+];
+
+/* ---------- 🔴 AVANZADO (B1): opiniones, condicional, trámites, entrevista ---------- */
+const B1_GROUPS = [
+  {
+    id: "b1vida", name: "🏙️ Vida diaria",
+    structures: [
+      {
+        id: "b1_opinion", title: "Dar tu opinión", pattern: "Moim zdaniem ___ · Zgadzam się",
+        note: "«Moim zdaniem» = en mi opinión. Frases más largas: cuida el ritmo y el acento en la penúltima. 🔈 «zdaniem» = «zdáñem».",
+        templates: [{ es: "En mi opinión, {a}.", pl: "Moim zdaniem {b}.", fills: [
+          ["es demasiado caro", "to jest za drogie"], ["es una buena idea", "to dobry pomysł"],
+          ["el transporte en Polonia funciona bien", "transport w Polsce działa dobrze"],
+          ["deberíamos esperar", "powinniśmy poczekać"], ["tienes razón", "masz rację"]] }],
+        phrases: [
+          ["Estoy de acuerdo contigo", "Zgadzam się z tobą."],
+          ["No estoy del todo de acuerdo", "Nie do końca się zgadzam."],
+          ["Depende", "To zależy."],
+          ["Sinceramente, no lo sé", "Szczerze mówiąc, nie wiem."]
+        ]
+      },
+      {
+        id: "b1_condicional", title: "Si tuviera… (condicional)", pattern: "Gdybym miał więcej czasu, ___",
+        note: "Condicional: hombre «miał… uczyłbym», mujer «miała… uczyłabym». 🔈 «gdybym» = «gdɨ́bɨm»: dos «y» oscuras.",
+        templates: [{ es: "Si tuviera más tiempo, {a}.", pl: "Gdybym miał więcej czasu, {b}.", alt: ["Gdybym miała więcej czasu, {b}."], fills: [
+          ["estudiaría más polaco", "uczyłbym się więcej polskiego", "uczyłabym się więcej polskiego"],
+          ["viajaría por Polonia", "podróżowałbym po Polsce", "podróżowałabym po Polsce"],
+          ["haría deporte", "uprawiałbym sport", "uprawiałabym sport"],
+          ["visitaría más a mi familia", "częściej odwiedzałbym rodzinę", "częściej odwiedzałabym rodzinę"]] }]
+      },
+      {
+        id: "b1_reclamo", title: "Hacer un reclamo", pattern: "Chciałbym złożyć reklamację",
+        note: "Para tiendas, servicios y compras por internet. Habla con calma y claro. 🔈 «reklamację» = «reklamátsie».",
+        phrases: [
+          ["Quisiera hacer un reclamo", "Chciałbym złożyć reklamację.", ["Chciałabym złożyć reklamację."]],
+          ["Compré este teléfono hace una semana y ya no funciona", "Kupiłem ten telefon tydzień temu i już nie działa.", ["Kupiłam ten telefon tydzień temu i już nie działa."]],
+          ["¿Me pueden devolver el dinero?", "Czy mogę dostać zwrot pieniędzy?"],
+          ["Quisiera cambiar este producto por uno nuevo", "Chciałbym wymienić ten produkt na nowy.", ["Chciałabym wymienić ten produkt na nowy."]],
+          ["Esto no es lo que pedí", "To nie jest to, co zamawiałem.", ["To nie jest to, co zamawiałam."]],
+          ["Llevo dos semanas esperando esto", "Czekam na to już od dwóch tygodni."]
+        ]
+      },
+      {
+        id: "b1_tramites", title: "Trámites en la oficina (urząd)", pattern: "Chciałbym złożyć wniosek o ___",
+        note: "Vocabulario de oficina pública: wniosek (solicitud), pismo (carta oficial), zameldować się (registrar domicilio). 🔈 «wniosek» = «vñósek».",
+        templates: [{ es: "Quisiera presentar una solicitud de {a}.", pl: "Chciałbym złożyć wniosek o {b}.", alt: ["Chciałabym złożyć wniosek o {b}."], fills: [
+          ["permiso de residencia", "kartę pobytu"], ["número PESEL", "numer PESEL"], ["permiso de trabajo", "zezwolenie na pracę"], ["subsidio", "zasiłek"]] }],
+        phrases: [
+          ["¿Qué documentos tengo que entregar?", "Jakie dokumenty muszę dostarczyć?"],
+          ["¿Hasta cuándo tengo que entregarlo?", "Do kiedy muszę to złożyć?"],
+          ["¿Puedo hacerlo por internet?", "Czy mogę to załatwić przez internet?"],
+          ["No entiendo esta carta. ¿Me lo puede explicar?", "Nie rozumiem tego pisma. Czy może mi pan to wyjaśnić?", ["Nie rozumiem tego pisma. Czy może mi pani to wyjaśnić?"]],
+          ["¿Dónde registro mi domicilio?", "Gdzie mam się zameldować?"],
+          ["Necesito un traductor jurado", "Potrzebuję tłumacza przysięgłego."]
+        ]
+      }
+    ]
+  },
+  {
+    id: "b1trabajo", name: "💼 Trabajo",
+    structures: [
+      {
+        id: "b1_entrevista", title: "Entrevista de trabajo", pattern: "Mam ___ doświadczenia",
+        note: "Preséntate con frases completas y seguras. 🔈 «doświadczenia» = «dosh'fiatchéña»: ś suave, w → f y d → t.",
+        templates: [{ es: "Tengo {a} de experiencia.", pl: "Mam {b} doświadczenia.", fills: [
+          ["un año", "rok"], ["dos años", "dwa lata", "2 lata"], ["cinco años", "pięć lat", "5 lat"], ["diez años", "dziesięć lat", "10 lat"]] }],
+        phrases: [
+          ["Trabajé como conductor en Colombia", "Pracowałem jako kierowca w Kolumbii.", ["Pracowałam jako kierowca w Kolumbii."]],
+          ["Soy una persona responsable y puntual", "Jestem osobą sumienną i punktualną."],
+          ["Aprendo rápido", "Szybko się uczę."],
+          ["Puedo empezar la próxima semana", "Mogę zacząć od przyszłego tygodnia."],
+          ["¿Cuál es el horario de trabajo?", "Jakie są godziny pracy?"],
+          ["¿Cuánto es el sueldo?", "Ile wynosi wynagrodzenie?"],
+          ["¿Hay posibilidad de firmar un contrato de trabajo?", "Czy jest możliwość podpisania umowy o pracę?"],
+          ["Hablo español, inglés y un poco de polaco", "Mówię po hiszpańsku, po angielsku i trochę po polsku."]
+        ]
+      },
+      {
+        id: "b1_problema", title: "Explicar un problema", pattern: "Jeśli nie ___, to ___",
+        note: "Frases largas con «bo», «ale», «jeśli»: practica primero despacio (🐢). 🔈 «zmiany» = «zmiánɨ».",
+        phrases: [
+          ["La máquina dejó de funcionar a mitad del turno", "Maszyna przestała działać w połowie zmiany."],
+          ["No sé qué pasó, pero algo anda mal", "Nie wiem, co się stało, ale coś jest nie tak."],
+          ["Se lo avisé al supervisor, pero no vino nadie", "Zgłosiłem to kierownikowi, ale nikt nie przyszedł.", ["Zgłosiłam to kierownikowi, ale nikt nie przyszedł."]],
+          ["Nos falta gente en este turno", "Brakuje nam ludzi na tej zmianie."],
+          ["Si no lo arreglamos hoy, no vamos a terminar el pedido", "Jeśli nie naprawimy tego dzisiaj, nie skończymy zamówienia."],
+          ["Creo que hay que llamar al servicio técnico", "Myślę, że trzeba wezwać serwis."],
+          ["¿Puedo proponer otra solución?", "Czy mogę zaproponować inne rozwiązanie?"]
+        ]
+      },
+      {
+        id: "b1_derechos", title: "Sueldo, contrato y derechos", pattern: "Chciałbym porozmawiać o ___",
+        note: "«o» + locativo: umowa → o umowie, urlop → o urlopie. 🔈 «wynagrodzeniu» = «vɨnagrodzéñu».",
+        templates: [{ es: "Quisiera hablar sobre {a}.", pl: "Chciałbym porozmawiać o {b}.", alt: ["Chciałabym porozmawiać o {b}."], fills: [
+          ["mi sueldo", "moim wynagrodzeniu"], ["las horas extra", "nadgodzinach"], ["mi contrato", "mojej umowie"],
+          ["las vacaciones", "urlopie"], ["el horario de turnos", "grafiku"]] }],
+        phrases: [
+          ["Todavía no recibí el pago del mes pasado", "Nie dostałem jeszcze wypłaty za zeszły miesiąc.", ["Nie dostałam jeszcze wypłaty za zeszły miesiąc."]],
+          ["¿Las horas extra se pagan?", "Czy nadgodziny są płatne?"],
+          ["¿Cuándo termina mi período de prueba?", "Kiedy kończy się mój okres próbny?"],
+          ["Quisiera renovar el contrato", "Chciałbym przedłużyć umowę.", ["Chciałabym przedłużyć umowę."]],
+          ["¿Me pueden dar un certificado de trabajo?", "Czy mogę dostać zaświadczenie o zatrudnieniu?"]
+        ]
+      }
+    ]
+  }
+];
+
+const LEVELS = [
+  { id: "a1", tag: "A1", name: "🟢 Básico", phon: "show", strict: 0.8, groups: A1_GROUPS,
+    desc: "Frases cortas y fijas. Ves la pronunciación figurada siempre. Ideal si estás empezando." },
+  { id: "a2", tag: "A2", name: "🟡 Intermedio", phon: "show", strict: 0.85, groups: A2_GROUPS,
+    desc: "Pasado, futuro, planes y cortesía. Frases más largas y una evaluación de pronunciación más exigente." },
+  { id: "b1", tag: "B1", name: "🔴 Avanzado", phon: "tap", strict: 0.9, groups: B1_GROUPS,
+    desc: "Opiniones, condicional, trámites y entrevista de trabajo. La pronunciación figurada queda oculta (tócala si la necesitas) y la evaluación es la más estricta." }
+];
+
 /* --- Sonidos difíciles para hispanohablantes --- */
 const SOUNDS = [
   { id: "y", letters: "Y", title: "La «i» oscura", tip: "y: di «i» con la lengua más atrás, casi «e». No es «i».",
@@ -880,7 +1126,8 @@ function soundCats(word) {
 const K = { settings: "pol_settings_v1", prefs: "pol_prefs_v1", stats: "pol_stats_v1", sounds: "pol_sounds_v1", srs: "pol_srs_v1", log: "pol_log_v1", theme: "pol_theme" };
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const settings = Object.assign({ rate: 0.9, phon: true, record: !IS_MOBILE, autoplay: true }, lsJSON(K.settings, {}));
-const prefs = Object.assign({ len: 20, mode: "repeat", level: "base", soundTab: "guide" }, lsJSON(K.prefs, {}));
+const prefs = Object.assign({ len: 20, mode: "repeat", level: "a1", soundTab: "guide" }, lsJSON(K.prefs, {}));
+if (["a1", "a2", "b1"].indexOf(prefs.level) === -1) prefs.level = "a1";   // versión anterior: base / vida / trabajo
 let stats = lsJSON(K.stats, {});        // structId → {c, n, last}
 let soundStats = lsJSON(K.sounds, {});  // categoría → {c, n}
 let srs = lsJSON(K.srs, {});            // clave → {box, due, reps, lapses, d}
@@ -927,19 +1174,26 @@ function buildDrills(st) {
   const out = [];
   (st.phrases || []).forEach((p) => out.push({ es: p[0], pl: p[1], alts: p[2] || [], structId: st.id }));
   (st.templates || []).forEach((t) => t.fills.forEach((f) => {
-    const alts = (t.alt || []).map((a) => a.replace("{b}", f[1]));
-    if (f[2]) { alts.push(t.pl.replace("{b}", f[2])); (t.alt || []).forEach((a) => alts.push(a.replace("{b}", f[2]))); }
+    // alternativas aceptadas: cada variante de la plantilla × cada variante del relleno (p. ej. femenino o cifras)
+    const fillVars = [f[1]].concat(f[2] || []);
+    const alts = [];
+    [t.pl].concat(t.alt || []).forEach((tp) => fillVars.forEach((fv) => {
+      const x = tp.replace("{b}", fv);
+      if (x !== t.pl.replace("{b}", f[1]) && alts.indexOf(x) === -1) alts.push(x);
+    }));
     out.push({ es: t.es.replace("{a}", f[0]), pl: t.pl.replace("{b}", f[1]), alts, structId: st.id });
   }));
   return out;
 }
 function findStruct(id) {
-  for (const lv of LEVELS) for (const st of lv.structures) if (st.id === id) return { level: lv, st };
+  for (const lv of LEVELS) for (const g of lv.groups) for (const st of g.structures) if (st.id === id) return { level: lv, group: g, st };
   return null;
 }
+function allStructs() { const out = []; LEVELS.forEach((lv) => lv.groups.forEach((g) => g.structures.forEach((st) => out.push(st)))); return out; }
+function levelOf(structId) { const f = structId && findStruct(structId); return f ? f.level : null; }
 let ALL_DRILLS = null;
 function allDrills() {
-  if (!ALL_DRILLS) ALL_DRILLS = [].concat(...LEVELS.map((lv) => [].concat(...lv.structures.map(buildDrills))));
+  if (!ALL_DRILLS) ALL_DRILLS = [].concat(...allStructs().map(buildDrills));
   return ALL_DRILLS;
 }
 function buildQueue(drills, length) {
@@ -972,7 +1226,7 @@ function lev(a, b) {
 function sim(a, b) { return 1 - lev(a, b) / Math.max(a.length, b.length, 1); }
 
 // Alinea las palabras de la frase con lo que reconoció el navegador.
-function alignWords(target, heard) {
+function alignWords(target, heard, strict) {
   const words = target.split(/\s+/).filter(Boolean).map((disp) => ({ disp, w: normPl(disp) })).filter((x) => x.w);
   const hw = normPl(heard).split(" ").filter(Boolean);
   const n = words.length, m = hw.length;
@@ -998,13 +1252,15 @@ function alignWords(target, heard) {
     if (x.status === "ok") pts += 1; else if (x.status === "close") pts += 0.5; else miss++;
   });
   const score = n ? pts / n : 0;
-  return { words, score, pass: miss === 0 && score >= 0.8 };
+  return { words, score, pass: miss === 0 && score >= (strict || 0.8) };
 }
 function scoreAttempt(d, heardList) {
   const targets = [d.pl].concat(d.alts || []);
+  const lv = levelOf(d.structId);
+  const strict = lv ? lv.strict : 0.8;
   let best = null;
   heardList.forEach((h) => targets.forEach((t, ti) => {
-    const r = alignWords(t, h);
+    const r = alignWords(t, h, strict);
     r.heard = h; r.target = t; r.ti = ti;
     if (!best || r.score > best.score + 1e-9 || (Math.abs(r.score - best.score) < 1e-9 && ti === 0 && best.ti !== 0)) best = r;
   }));
@@ -1186,10 +1442,10 @@ function renderPhrasesHome() {
   if (due.length) $("reviewBtn").addEventListener("click", startReview);
 
   $("levelTabs").innerHTML = LEVELS.map((lv) =>
-    `<button class="level-tab${lv.id === prefs.level ? " active" : ""}" data-level="${lv.id}" type="button">${esc(lv.name)}</button>`).join("");
+    `<button class="level-tab${lv.id === prefs.level ? " active" : ""}" data-level="${lv.id}" type="button">${esc(lv.name)}<small>${esc(lv.tag)} · ${lv.groups.reduce((a, g) => a + g.structures.length, 0)} temas</small></button>`).join("");
   const lv = LEVELS.find((l) => l.id === prefs.level) || LEVELS[0];
   $("levelDesc").textContent = lv.desc;
-  $("structGrid").innerHTML = lv.structures.map((st) => {
+  $("structGrid").innerHTML = lv.groups.map((g) => `<h3 class="group-title">${esc(g.name)}</h3><div class="struct-grid">` + g.structures.map((st) => {
     const s = stats[st.id];
     const pct = s && s.n ? Math.round((s.c / s.n) * 100) : null;
     const count = buildDrills(st).length;
@@ -1199,7 +1455,7 @@ function renderPhrasesHome() {
       <div class="tile-bar"><div style="width:${pct || 0}%;background:${pct == null ? "transparent" : pctColor(pct)}"></div></div>
       <div class="tile-meta">${count} frases${s && s.n ? " · " + s.n + " repeticiones" : ""}</div>
     </button>`;
-  }).join("");
+  }).join("") + `</div>`).join("");
 }
 
 /* =========================================================================
@@ -1218,7 +1474,7 @@ function startStructure(id) {
   const drills = buildDrills(found.st);
   lastStart = () => startStructure(id);
   session = newSession({
-    title: found.st.title, badge: found.level.name.split(" ")[0], pattern: found.st.pattern, note: found.st.note,
+    title: found.st.title, badge: found.level.name.split(" ")[0] + " " + found.level.tag, pattern: found.st.pattern, note: found.st.note,
     queue: buildQueue(drills, prefs.len), pool: drills, structId: id
   });
   beginSession();
@@ -1260,7 +1516,14 @@ function wordsHtml(text, classes) {
   return text.split(/\s+/).filter(Boolean).map((w, k) =>
     `<span class="word${classes && classes[k] ? " " + classes[k] : ""}" data-say="${esc(w.replace(/[.,!?¿¡]/g, ""))}">${esc(w)}</span>`).join(" ");
 }
-function phonHtml(pl) { return settings.phon ? `<div class="phon">${esc(phon(pl))}</div>` : ""; }
+function phonHtml(pl, forceShow) {
+  if (!settings.phon) return "";
+  const d = currentDrill();
+  const lv = d && levelOf(d.structId);
+  if (!forceShow && lv && lv.phon === "tap" && !checked)
+    return `<div class="audio-row" style="margin:6px 0 0"><button class="btn btn-small phon-reveal" data-phon="${esc(phon(pl))}" type="button">🗣️ Ver pronunciación</button></div>`;
+  return `<div class="phon">${esc(phon(pl))}</div>`;
+}
 
 function renderDrill() {
   checked = false;
@@ -1645,7 +1908,7 @@ function renderProgress() {
     .map((c) => ({ c, p: Math.round((soundStats[c].c / soundStats[c].n) * 100), n: soundStats[c].n }))
     .sort((a, b) => a.p - b.p);
   const structs = [];
-  LEVELS.forEach((lv) => lv.structures.forEach((st) => { if (stats[st.id]) structs.push({ st, s: stats[st.id] }); }));
+  LEVELS.forEach((lv) => lv.groups.forEach((g) => g.structures.forEach((st) => { if (stats[st.id]) structs.push({ st, s: stats[st.id], tag: lv.tag }); })));
   const voice = pickPolishVoice();
   const opt = (key, val, label) => `<button class="len-opt set-btn${settings[key] === val ? " active" : ""}" data-key="${key}" data-val="${val}" type="button">${label}</button>`;
 
@@ -1667,8 +1930,8 @@ function renderProgress() {
     </div>
 
     <div class="panel"><h3>🗣️ Por tema</h3>
-      ${structs.length ? structs.map(({ st, s }) => { const p = Math.round((s.c / s.n) * 100); return `<div class="bar-row">
-          <span>${esc(st.title)}</span>
+      ${structs.length ? structs.map(({ st, s, tag }) => { const p = Math.round((s.c / s.n) * 100); return `<div class="bar-row">
+          <span><small class="muted">${tag}</small> ${esc(st.title)}</span>
           <div class="bar"><div style="width:${p}%;background:${pctColor(p)}"></div></div>
           <b>${p}%</b>
           <button class="btn btn-small" data-struct="${st.id}" type="button">Practicar</button>
@@ -1717,6 +1980,8 @@ $("levelTabs").addEventListener("click", (e) => { const b = e.target.closest(".l
 
 // Delegación global: escuchar palabras, practicar sonidos, abrir temas, ajustes
 document.addEventListener("click", (e) => {
+  const pr0 = e.target.closest(".phon-reveal");
+  if (pr0) { const div = document.createElement("div"); div.className = "phon"; div.textContent = pr0.dataset.phon; pr0.parentNode.replaceWith(div); return; }
   const say = e.target.closest("[data-say]");
   if (say) { speak(say.dataset.say, { slow: say.classList.contains("word") }); return; }
   const slow = e.target.closest("[data-say-slow]");
