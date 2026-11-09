@@ -270,6 +270,7 @@ button { font: inherit; color: inherit; }
 .set-row:last-child { border-bottom: 0; }
 .set-row small { display: block; color: var(--muted); }
 .switch { display: flex; gap: 4px; }
+.mic-diag { background: var(--card-2); border-radius: 10px; padding: 10px; font-size: 0.72rem; white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto; margin: 6px 0 0; }
 .log-row { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 5px 0; border-bottom: 1px solid var(--border); gap: 10px; }
 .log-row:last-child { border-bottom: 0; }
 
@@ -1350,6 +1351,8 @@ function soundCats(word) {
    ========================================================================= */
 const K = { settings: "pol_settings_v1", prefs: "pol_prefs_v1", stats: "pol_stats_v1", sounds: "pol_sounds_v1", srs: "pol_srs_v1", log: "pol_log_v1", theme: "pol_theme" };
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+// iPhone/iPad (todas las apps de navegador usan WebKit, también Chrome); el iPad moderno se presenta como «Macintosh»
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 const settings = Object.assign({ rate: 0.9, phon: true, record: !IS_MOBILE, autoplay: true }, lsJSON(K.settings, {}));
 const prefs = Object.assign({ len: 20, mode: "repeat", level: "a1", soundTab: "guide", wmode: "card", wdir: "es2pl", wlevel: "a1" }, lsJSON(K.prefs, {}));
 if (["a1", "a2", "b1"].indexOf(prefs.level) === -1) prefs.level = "a1";   // versión anterior: base / vida / trabajo
@@ -1709,30 +1712,32 @@ function killRecognition() {
   const m = $("micBtn"); if (m) m.classList.remove("listening");
 }
 
-async function startSpeech() {
+// Diario del micrófono (Progreso → Ajustes → Diagnóstico): ayuda a ver qué falla en cada teléfono.
+const micLog = [];
+let micT0 = 0;
+function mlog(ev) {
+  micLog.push((micT0 ? "+" + ((performance.now() - micT0) / 1000).toFixed(1) + "s " : "") + ev);
+  if (micLog.length > 60) micLog.splice(0, micLog.length - 60);
+}
+
+// IMPORTANTE (iPhone/iPad, en Safari y también en Chrome, que allí usa el mismo motor WebKit):
+// rec.start() tiene que llamarse en el mismo instante del toque, sin «await» ni pausas antes.
+// Si no, el micrófono parece escuchar pero nunca llega nada.
+function startSpeech() {
   if (!SR) return;
   // tocar 🎤 mientras escucha = «ya terminé de hablar»
-  if (listening && activeRec) { try { activeRec.stop(); } catch (e) {} return; }
+  if (listening && activeRec) { mlog("toque: stop()"); try { activeRec.stop(); } catch (e) {} return; }
 
-  const ttsWasActive = !!(window.speechSynthesis && (window.speechSynthesis.speaking || window.speechSynthesis.pending));
+  micT0 = performance.now();
+  mlog("— intento nuevo —");
+  if (window.speechSynthesis && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) mlog("lector sonando → cancelado");
   stopSpeech();
   if (myVoiceAudio) myVoiceAudio.pause();
   killRecognition();
   stopRecorder();
   const drillAtStart = currentDrill();
-  // En el móvil el sistema de audio necesita un momento para pasar de «reproducir» a «grabar»
-  if (ttsWasActive) await pause(IS_MOBILE ? 450 : 120);
 
-  // Solo abrimos el micrófono aparte si hay que grabar la voz. Abrirlo y cerrarlo antes de
-  // cada reconocimiento deja sin audio al segundo intento en iPhone y en varios Android.
-  if (settings.record && window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    setStatus("Pidiendo acceso al micrófono…", "live");
-    try { startRecorder(await navigator.mediaDevices.getUserMedia({ audio: true })); }
-    catch (e) { setStatus(MIC_BLOCKED, "err"); return; }
-  }
-  if (currentDrill() !== drillAtStart) { stopRecorder(); return; }   // el usuario ya pasó a otra frase
-
-  const rec = new SR();
+  const rec = new SR();   // objeto nuevo en cada intento
   rec.lang = "pl-PL";
   rec.interimResults = true;   // algunos móviles terminan sin resultado «final»: usamos el parcial
   rec.continuous = false;
@@ -1745,32 +1750,39 @@ async function startSpeech() {
 
   let interim = "";
   let done = false;
-  const finish = (alts) => {
+  const finish = (alts, why) => {
     if (done) return;
     done = true;
+    mlog("fin: " + why);
     killRecognition();
     stopRecorder();
     const heard = (alts || []).filter((a) => a && a.trim());
     if (heard.length && currentDrill() === drillAtStart) onHeard(heard);
     else if (currentDrill() === drillAtStart) setStatus("No te escuché. Toca 🎤 y habla un poco más fuerte.", "err");
   };
-  recFinish = () => finish(interim ? [interim] : []);
+  recFinish = () => finish(interim ? [interim] : [], "tiempo agotado");
   // red de seguridad: si el teléfono no devuelve nada, no dejamos el micrófono «colgado»
   const arm = (ms) => { clearTimeout(recTimer); recTimer = setTimeout(() => { if (recFinish) recFinish(); }, ms); };
   arm(10000);
 
+  rec.onstart = () => mlog("start");
+  rec.onaudiostart = () => mlog("audiostart");
+  rec.onsoundstart = () => mlog("soundstart");
+  rec.onspeechstart = () => mlog("speechstart");
   rec.onresult = (e) => {
     for (let i = e.resultIndex; i < e.results.length; i++) {
       const r = e.results[i];
-      if (r.isFinal) { finish(Array.from(r).map((x) => x.transcript)); return; }
+      if (r.isFinal) { mlog("resultado final: " + r[0].transcript); finish(Array.from(r).map((x) => x.transcript), "final"); return; }
     }
     interim = Array.from(e.results).map((r) => r[0].transcript).join(" ");
+    mlog("parcial: " + interim);
     arm(2500);   // ya habló: si en 2,5 s no llega el resultado final, evaluamos el parcial
   };
-  rec.onspeechend = () => { try { rec.stop(); } catch (e) {} };
+  rec.onspeechend = () => { mlog("speechend"); try { rec.stop(); } catch (e) {} };
   rec.onerror = (e) => {
+    mlog("error: " + e.error);
     if (done || e.error === "aborted") return;
-    if (interim && e.error === "no-speech") { finish([interim]); return; }
+    if (interim && e.error === "no-speech") { finish([interim], "parcial tras no-speech"); return; }
     done = true;
     killRecognition();
     stopRecorder();
@@ -1782,9 +1794,17 @@ async function startSpeech() {
     } else if (e.error === "network") setStatus("El reconocimiento de voz necesita internet. Revisa la conexión y toca 🎤.", "err");
     else setStatus("No funcionó el reconocimiento (" + e.error + "). Toca 🎤 otra vez.", "err");
   };
-  rec.onend = () => { if (!done) finish(interim ? [interim] : []); };
-  try { rec.start(); }
-  catch (e) { done = true; killRecognition(); stopRecorder(); setStatus("No se pudo iniciar el micrófono. Inténtalo otra vez.", "err"); }
+  rec.onend = () => { mlog("end"); if (!done) finish(interim ? [interim] : [], "end"); };
+  try { rec.start(); mlog("start() llamado"); }
+  catch (e) { mlog("start() falló: " + e.message); done = true; killRecognition(); stopRecorder(); setStatus("No se pudo iniciar el micrófono. Inténtalo otra vez.", "err"); return; }
+
+  // La grabación de tu voz va DESPUÉS de arrancar el reconocimiento (no lo retrasa).
+  // En iPhone/iPad no se usa: el sistema no deja grabar y reconocer a la vez.
+  if (settings.record && !IS_IOS && window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((stream) => { if (activeRec === rec && !done) startRecorder(stream); else stream.getTracks().forEach((t) => t.stop()); })
+      .catch(() => mlog("grabación de voz no disponible"));
+  }
 }
 
 /* =========================================================================
@@ -2128,7 +2148,7 @@ function renderFeedback(r, ok, extra) {
   html += `<div class="fb-actions">
       <button class="btn btn-small" id="fbNative" type="button">🔊 Nativo</button>
       <button class="btn btn-small" id="fbSlow" type="button">🐢</button>
-      ${SR && settings.record && window.MediaRecorder ? `<button class="btn btn-small" id="myVoiceBtn" type="button" ${myVoiceUrl && showWords ? "" : "disabled"}>▶️ Mi voz</button>` : ""}
+      ${SR && settings.record && !IS_IOS && window.MediaRecorder ? `<button class="btn btn-small" id="myVoiceBtn" type="button" ${myVoiceUrl && showWords ? "" : "disabled"}>▶️ Mi voz</button>` : ""}
       <button class="btn btn-primary" id="nextBtn" type="button">Siguiente →</button>
     </div>`;
   if (isRetry || (SR && checked)) html += `<div class="fb-note">Puedes tocar 🎤 otra vez para practicar — solo cuenta el primer intento. Enter = siguiente.</div>`;
@@ -2526,16 +2546,25 @@ function renderProgress() {
         <div class="switch">${opt("phon", true, "Sí")}${opt("phon", false, "No")}</div></div>
       <div class="set-row"><div>Reproducir automáticamente<small>Escuchar la frase al aparecer</small></div>
         <div class="switch">${opt("autoplay", true, "Sí")}${opt("autoplay", false, "No")}</div></div>
-      <div class="set-row"><div>Grabar mi voz<small>Para comparar tu voz con la del nativo (▶️ Mi voz)</small></div>
+      <div class="set-row"><div>Grabar mi voz<small>${IS_IOS ? "No disponible en iPhone/iPad: el sistema no permite grabar y reconocer la voz a la vez." : "Para comparar tu voz con la del nativo (▶️ Mi voz)"}</small></div>
         <div class="switch">${opt("record", true, "Sí")}${opt("record", false, "No")}</div></div>
       <div class="set-row"><div>Voz polaca<small>${voice ? esc(voice.name) + " (" + esc(voice.lang) + ")" : "No encontrada — se usará la voz por defecto del navegador"}</small></div>
         <button class="btn btn-small" id="voiceTest" type="button">🔊 Probar</button></div>
       <div class="set-row"><div>Micrófono<small>${SR ? "Reconocimiento de voz disponible ✓" : "Este navegador no reconoce voz. Usa Chrome, Edge o Safari."}</small></div></div>
+      <div class="set-row"><div>🔧 Diagnóstico del micrófono<small>Si el micrófono falla, haz una captura de pantalla de esto</small></div>
+        <button class="btn btn-small" id="micDiagBtn" type="button">Mostrar</button></div>
+      <pre class="mic-diag" id="micDiag" hidden></pre>
       <div class="set-row"><div>Borrar progreso<small>Estadísticas, repasos y sesiones (tus palabras propias se conservan)</small></div>
         <button class="btn btn-small" id="resetBtn" type="button">Borrar…</button></div>
     </div>`;
 
   $("voiceTest").addEventListener("click", () => speak("Dzień dobry! Miło mi. Mówię po polsku.", { btn: "voiceTest" }));
+  $("micDiagBtn").addEventListener("click", () => {
+    const el = $("micDiag");
+    el.hidden = !el.hidden;
+    el.textContent = [navigator.userAgent, "iOS: " + IS_IOS + " · reconocimiento: " + (SR ? "sí" : "no") + " · grabar voz: " + settings.record, ""]
+      .concat(micLog.length ? micLog.slice(-40) : ["(todavía no se usó el micrófono)"]).join("\n");
+  });
   $("resetBtn").addEventListener("click", (e) => {
     const b = e.currentTarget;
     if (b.dataset.armed) {
