@@ -59,11 +59,24 @@ button { font: inherit; color: inherit; }
   border: 1px solid var(--border); background: var(--card); font-size: 1.1rem; cursor: pointer;
 }
 
-.section-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--card);
+.section-switch { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; background: var(--card);
   border: 1px solid var(--border); border-radius: 14px; padding: 5px; margin-bottom: 20px; }
 .section-btn { border: 0; background: transparent; padding: 9px 6px; border-radius: 10px; font-weight: 600;
   cursor: pointer; font-size: 0.95rem; }
 .section-btn.active { background: var(--accent); color: #fff; }
+@media (max-width: 480px) { .section-btn { font-size: 0.82rem; padding: 9px 2px; } }
+.card-sep { border: 0; border-top: 1px dashed var(--border); margin: 16px 0; }
+.fc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.fc-actions .btn { padding: 12px; }
+.ex-line { display: flex; gap: 10px; align-items: flex-start; background: var(--card-2); border-radius: 12px; padding: 10px 12px; margin-top: 12px; text-align: left; }
+.ex-line small { display: block; color: var(--muted); }
+.ex-phon { font-style: italic; color: var(--accent-dark); font-size: 0.88rem; }
+:root[data-theme="dark"] .ex-phon { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ex-phon { color: var(--accent); } }
+.my-form { display: grid; grid-template-columns: 1fr 1fr 1.4fr auto; gap: 8px; margin-bottom: 6px; }
+@media (max-width: 620px) { .my-form { grid-template-columns: 1fr; } }
+.my-form input { border: 1px solid var(--border); background: var(--card-2); color: var(--text); border-radius: 10px; padding: 9px 11px; font: inherit; min-width: 0; }
+.my-form input:focus { outline: 2px solid var(--accent); border-color: transparent; }
 
 .view { display: none; animation: fade 0.25s ease; }
 .view.active { display: block; }
@@ -234,7 +247,7 @@ button { font: inherit; color: inherit; }
 .pairs-opts .choice small { display: block; font-weight: 500; color: var(--muted); }
 
 /* Progreso */
-.stat-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.stat-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
 @media (max-width: 560px) { .stat-tiles { grid-template-columns: repeat(2, 1fr); } }
 .stat-tile { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; text-align: center; }
 .stat-tile b { display: block; font-size: 1.5rem; }
@@ -262,11 +275,12 @@ button { font: inherit; color: inherit; }
   <header class="top">
     <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Tema claro / oscuro">🌙</button>
     <h1>Polaco en práctica 🇵🇱</h1>
-    <p>Frases para la vida diaria y el trabajo · 3 niveles · escucha, repite y habla</p>
+    <p>Frases y palabras para la vida diaria y el trabajo · 3 niveles · escucha, repite y habla</p>
   </header>
 
   <div class="section-switch">
     <button class="section-btn active" data-section="phrases" type="button">🗣️ Frases</button>
+    <button class="section-btn" data-section="words" type="button">🃏 Palabras</button>
     <button class="section-btn" data-section="sounds" type="button">🔤 Sonidos</button>
     <button class="section-btn" data-section="progress" type="button">📈 Progreso</button>
   </div>
@@ -322,6 +336,26 @@ button { font: inherit; color: inherit; }
         <button class="btn" id="doneHome" type="button">Elegir otro tema</button>
       </div>
     </div>
+  </section>
+
+  <!-- PALABRAS -->
+  <section id="view-words" class="view">
+    <div class="len-row">
+      <span class="len-label">Actividad:</span>
+      <button class="len-opt wmode-btn" data-wmode="card" type="button">🃏 Fichas</button>
+      <button class="len-opt wmode-btn" data-wmode="say" type="button">🎤 Pronunciar</button>
+      <button class="len-opt wmode-btn" data-wmode="listen" type="button">👂 Escuchar</button>
+    </div>
+    <div class="len-row" id="wdirRow">
+      <span class="len-label">Ficha:</span>
+      <button class="len-opt wdir-btn" data-wdir="es2pl" type="button">🇪🇸 → 🇵🇱</button>
+      <button class="len-opt wdir-btn" data-wdir="pl2es" type="button">🇵🇱 → 🇪🇸</button>
+    </div>
+    <p class="mode-desc" id="wmodeDesc"></p>
+    <div id="wordReviewBox"></div>
+    <div class="level-tabs" id="wordLevelTabs"></div>
+    <div class="struct-grid" id="deckGrid"></div>
+    <div class="panel" id="myWords" style="margin-top:18px"></div>
   </section>
 
   <!-- SONIDOS -->
@@ -929,6 +963,187 @@ const TWISTERS = [
   ["El rey Carlos le compró a la reina Carolina collares color coral", "Król Karol kupił królowej Karolinie korale koloru koralowego."]
 ];
 
+/* --- Palabras (fichas): [español, polaco, ejemplo PL, ejemplo ES, alternativas aceptadas] --- */
+const DECKS = [
+  { id: "w_familia", level: "a1", title: "👨‍👩‍👧 Familia", words: [
+    ["madre", "matka", "Moja matka mieszka w Peru.", "Mi madre vive en Perú."],
+    ["padre", "ojciec", "Mój ojciec jest kierowcą.", "Mi padre es conductor."],
+    ["esposa", "żona", "Moja żona pracuje w hotelu.", "Mi esposa trabaja en un hotel."],
+    ["esposo", "mąż", "Mój mąż jest w pracy.", "Mi esposo está en el trabajo."],
+    ["hijo", "syn", "Mój syn ma pięć lat.", "Mi hijo tiene cinco años."],
+    ["hija", "córka", "Moja córka chodzi do szkoły.", "Mi hija va a la escuela."],
+    ["niño / niña", "dziecko", "Dziecko śpi.", "El niño duerme."],
+    ["niños / hijos", "dzieci", "Mam dwoje dzieci.", "Tengo dos hijos."],
+    ["hermano", "brat", "Mój brat mieszka w Chile.", "Mi hermano vive en Chile."],
+    ["hermana", "siostra", "Moja siostra jest pielęgniarką.", "Mi hermana es enfermera."],
+    ["abuela", "babcia", "Babcia gotuje obiad.", "La abuela cocina el almuerzo."],
+    ["familia", "rodzina", "Moja rodzina jest duża.", "Mi familia es grande."]] },
+  { id: "w_comida", level: "a1", title: "🍞 Comida y bebida", words: [
+    ["pan", "chleb", "Poproszę chleb.", "Me da pan, por favor."],
+    ["agua", "woda", "Woda jest zimna.", "El agua está fría."],
+    ["café", "kawa", "Piję kawę rano.", "Tomo café en la mañana."],
+    ["té", "herbata", "Herbata z cytryną.", "Té con limón."],
+    ["leche", "mleko", "Nie piję mleka.", "No tomo leche."],
+    ["carne", "mięso", "Nie jem mięsa.", "No como carne."],
+    ["arroz", "ryż", "Ryż z kurczakiem.", "Arroz con pollo."],
+    ["pollo", "kurczak", "Kurczak jest gotowy.", "El pollo está listo."],
+    ["papas", "ziemniaki", "Lubię ziemniaki.", "Me gustan las papas."],
+    ["huevo", "jajko", "Jem jajko na śniadanie.", "Como un huevo al desayuno."],
+    ["queso", "ser", "Kanapka z serem.", "Un sándwich de queso."],
+    ["fruta", "owoce", "Kupuję owoce.", "Compro fruta."]] },
+  { id: "w_casa", level: "a1", title: "🏠 La casa", words: [
+    ["departamento", "mieszkanie", "Mieszkanie jest małe.", "El departamento es pequeño."],
+    ["cuarto / pieza", "pokój", "To jest mój pokój.", "Este es mi cuarto."],
+    ["cocina", "kuchnia", "Jestem w kuchni.", "Estoy en la cocina."],
+    ["baño", "łazienka", "Łazienka jest wolna.", "El baño está libre."],
+    ["cama", "łóżko", "Łóżko jest wygodne.", "La cama es cómoda."],
+    ["mesa", "stół", "Klucze są na stole.", "Las llaves están en la mesa."],
+    ["silla", "krzesło", "Usiądź na krześle.", "Siéntate en la silla."],
+    ["ventana", "okno", "Otwórz okno.", "Abre la ventana."],
+    ["puerta", "drzwi", "Zamknij drzwi.", "Cierra la puerta."],
+    ["llave", "klucz", "Gdzie jest klucz?", "¿Dónde está la llave?"],
+    ["refrigerador", "lodówka", "Mleko jest w lodówce.", "La leche está en el refrigerador."],
+    ["lavadora", "pralka", "Pralka nie działa.", "La lavadora no funciona."]] },
+  { id: "w_ciudad", level: "a1", title: "🚌 Ciudad y transporte", words: [
+    ["calle", "ulica", "Mieszkam na tej ulicy.", "Vivo en esta calle."],
+    ["bus", "autobus", "Autobus się spóźnia.", "El bus viene atrasado."],
+    ["tranvía", "tramwaj", "Jadę tramwajem.", "Voy en tranvía."],
+    ["tren", "pociąg", "Pociąg odjeżdża o ósmej.", "El tren sale a las ocho."],
+    ["estación", "dworzec", "Dworzec jest blisko.", "La estación está cerca."],
+    ["parada", "przystanek", "Czekam na przystanku.", "Espero en la parada."],
+    ["boleto", "bilet", "Mam bilet.", "Tengo boleto."],
+    ["a la izquierda", "w lewo", "Proszę skręcić w lewo.", "Doble a la izquierda, por favor."],
+    ["a la derecha", "w prawo", "Proszę skręcić w prawo.", "Doble a la derecha, por favor."],
+    ["derecho (recto)", "prosto", "Proszę iść prosto.", "Siga derecho, por favor."],
+    ["cerca", "blisko", "Sklep jest blisko.", "La tienda está cerca."],
+    ["lejos", "daleko", "Lotnisko jest daleko.", "El aeropuerto está lejos."]] },
+  { id: "w_tiempo", level: "a1", title: "📅 Días y tiempo", words: [
+    ["lunes", "poniedziałek", "W poniedziałek pracuję.", "El lunes trabajo."],
+    ["martes", "wtorek", "We wtorek mam wolne.", "El martes tengo libre."],
+    ["miércoles", "środa", "W środę idę do lekarza.", "El miércoles voy al médico."],
+    ["jueves", "czwartek", "W czwartek jest spotkanie.", "El jueves hay una reunión."],
+    ["viernes", "piątek", "W piątek jest wypłata.", "El viernes es el día de pago."],
+    ["sábado", "sobota", "W sobotę odpoczywam.", "El sábado descanso."],
+    ["domingo", "niedziela", "W niedzielę sklepy są zamknięte.", "El domingo las tiendas están cerradas."],
+    ["hoy", "dzisiaj", "Dzisiaj jest zimno.", "Hoy hace frío."],
+    ["mañana", "jutro", "Do zobaczenia jutro.", "Nos vemos mañana."],
+    ["ayer", "wczoraj", "Wczoraj padało.", "Ayer llovió."],
+    ["semana", "tydzień", "Pracuję pięć dni w tygodniu.", "Trabajo cinco días a la semana."],
+    ["hora", "godzina", "Mam godzinę przerwy.", "Tengo una hora de descanso."]] },
+  { id: "w_numeros", level: "a1", title: "🔢 Números", words: [
+    ["uno", "jeden", "Jeden bilet, proszę.", "Un boleto, por favor.", ["1"]],
+    ["dos", "dwa", "Dwa bilety, proszę.", "Dos boletos, por favor.", ["2"]],
+    ["tres", "trzy", "Trzy dni.", "Tres días.", ["3"]],
+    ["cuatro", "cztery", "Cztery godziny.", "Cuatro horas.", ["4"]],
+    ["cinco", "pięć", "Pięć minut.", "Cinco minutos.", ["5"]],
+    ["seis", "sześć", "Sześć złotych.", "Seis zlotys.", ["6"]],
+    ["siete", "siedem", "Siedem dni w tygodniu.", "Siete días a la semana.", ["7"]],
+    ["ocho", "osiem", "Osiem godzin pracy.", "Ocho horas de trabajo.", ["8"]],
+    ["nueve", "dziewięć", "Dziewięć lat.", "Nueve años.", ["9"]],
+    ["diez", "dziesięć", "Dziesięć minut przerwy.", "Diez minutos de descanso.", ["10"]],
+    ["cien", "sto", "Sto złotych.", "Cien zlotys.", ["100"]],
+    ["mil", "tysiąc", "Tysiąc złotych.", "Mil zlotys.", ["1000"]]] },
+
+  { id: "w_trabajo", level: "a2", title: "🦺 En el trabajo", words: [
+    ["trabajo", "praca", "Szukam pracy.", "Busco trabajo."],
+    ["jefe", "szef", "Szef jest w biurze.", "El jefe está en la oficina."],
+    ["compañero", "kolega", "Mój kolega mi pomaga.", "Mi compañero me ayuda."],
+    ["turno", "zmiana", "Mam nocną zmianę.", "Tengo el turno de noche."],
+    ["descanso", "przerwa", "Mamy przerwę o dwunastej.", "Tenemos descanso a las doce."],
+    ["pago (del sueldo)", "wypłata", "Wypłata jest dziesiątego.", "El pago es el día diez."],
+    ["contrato", "umowa", "Podpisałem umowę.", "Firmé el contrato."],
+    ["vacaciones", "urlop", "Mam urlop w sierpniu.", "Tengo vacaciones en agosto."],
+    ["horas extra", "nadgodziny", "Dzisiaj robię nadgodziny.", "Hoy hago horas extra."],
+    ["almacén / bodega", "magazyn", "Pracuję w magazynie.", "Trabajo en un almacén."],
+    ["herramientas", "narzędzia", "Gdzie są narzędzia?", "¿Dónde están las herramientas?"],
+    ["guantes", "rękawice", "Załóż rękawice.", "Ponte los guantes."]] },
+  { id: "w_cuerpo", level: "a2", title: "🩺 Cuerpo y salud", words: [
+    ["cabeza", "głowa", "Boli mnie głowa.", "Me duele la cabeza."],
+    ["manos", "ręce", "Umyj ręce.", "Lávate las manos."],
+    ["pierna", "noga", "Złamałem nogę.", "Me quebré la pierna."],
+    ["espalda", "plecy", "Bolą mnie plecy.", "Me duele la espalda."],
+    ["estómago", "brzuch", "Boli mnie brzuch.", "Me duele el estómago."],
+    ["diente / muela", "ząb", "Boli mnie ząb.", "Me duele una muela."],
+    ["garganta", "gardło", "Boli mnie gardło.", "Me duele la garganta."],
+    ["ojo", "oko", "Mam coś w oku.", "Tengo algo en el ojo."],
+    ["médico", "lekarz", "Muszę iść do lekarza.", "Tengo que ir al médico."],
+    ["remedio", "lekarstwo", "Biorę lekarstwo.", "Tomo un remedio."],
+    ["receta", "recepta", "To jest na receptę.", "Esto es con receta."],
+    ["fiebre", "gorączka", "Dziecko ma gorączkę.", "El niño tiene fiebre."]] },
+  { id: "w_compras", level: "a2", title: "🛒 Compras", words: [
+    ["precio", "cena", "Jaka jest cena?", "¿Cuál es el precio?"],
+    ["barato", "tani", "Ten telefon jest tani.", "Este teléfono es barato."],
+    ["caro", "drogi", "Ten sklep jest drogi.", "Esta tienda es cara."],
+    ["efectivo", "gotówka", "Płacę gotówką.", "Pago en efectivo."],
+    ["tarjeta", "karta", "Czy mogę zapłacić kartą?", "¿Puedo pagar con tarjeta?"],
+    ["vuelto", "reszta", "Proszę zatrzymać resztę.", "Quédese con el vuelto."],
+    ["boleta / recibo", "paragon", "Poproszę paragon.", "Me da la boleta, por favor."],
+    ["oferta", "promocja", "Kawa jest w promocji.", "El café está en oferta."],
+    ["talla", "rozmiar", "Jaki to rozmiar?", "¿Qué talla es?"],
+    ["bolsa", "torba", "Potrzebuję torby.", "Necesito una bolsa."],
+    ["caja (para pagar)", "kasa", "Proszę zapłacić przy kasie.", "Pague en la caja, por favor."],
+    ["abierto", "otwarty", "Sklep jest otwarty do dwudziestej.", "La tienda está abierta hasta las veinte."]] },
+  { id: "w_verbos", level: "a2", title: "🔁 Verbos útiles", words: [
+    ["hacer", "robić", "Co robisz?", "¿Qué haces?"],
+    ["tener", "mieć", "Mam czas.", "Tengo tiempo."],
+    ["ir (a pie)", "iść", "Idę do domu.", "Voy a casa."],
+    ["ir (en vehículo)", "jechać", "Jadę do pracy.", "Voy al trabajo."],
+    ["trabajar", "pracować", "Pracuję w fabryce.", "Trabajo en una fábrica."],
+    ["hablar", "mówić", "Mówię po polsku.", "Hablo polaco."],
+    ["entender", "rozumieć", "Rozumiem.", "Entiendo."],
+    ["ayudar", "pomagać", "Pomagam koledze.", "Ayudo a un compañero."],
+    ["esperar", "czekać", "Czekam na autobus.", "Espero el bus."],
+    ["pagar", "płacić", "Płacę kartą.", "Pago con tarjeta."],
+    ["comprar", "kupować", "Kupuję chleb.", "Compro pan."],
+    ["vivir", "mieszkać", "Mieszkam w Polsce.", "Vivo en Polonia."]] },
+
+  { id: "w_tramites", level: "b1", title: "🏛️ Trámites", words: [
+    ["oficina pública", "urząd", "Idę do urzędu.", "Voy a la oficina pública."],
+    ["solicitud", "wniosek", "Złożyłem wniosek.", "Presenté la solicitud."],
+    ["permiso de residencia", "karta pobytu", "Czekam na kartę pobytu.", "Espero el permiso de residencia."],
+    ["registro de domicilio", "zameldowanie", "Potrzebuję zameldowania.", "Necesito el registro de domicilio."],
+    ["firma", "podpis", "Tutaj potrzebny jest podpis.", "Aquí se necesita una firma."],
+    ["plazo / fecha", "termin", "Jaki jest termin?", "¿Cuál es el plazo?"],
+    ["carta oficial", "pismo", "Dostałem pismo z urzędu.", "Recibí una carta de la oficina."],
+    ["seguro", "ubezpieczenie", "Mam ubezpieczenie zdrowotne.", "Tengo seguro de salud."],
+    ["impuesto", "podatek", "Muszę zapłacić podatek.", "Tengo que pagar un impuesto."],
+    ["certificado", "zaświadczenie", "Potrzebuję zaświadczenia.", "Necesito un certificado."],
+    ["traductor", "tłumacz", "Potrzebuję tłumacza.", "Necesito un traductor."],
+    ["fila", "kolejka", "W urzędzie jest długa kolejka.", "En la oficina hay una fila larga."]] },
+  { id: "w_empleo", level: "b1", title: "💼 Empleo y derechos", words: [
+    ["sueldo / remuneración", "wynagrodzenie", "Wynagrodzenie jest co miesiąc.", "El sueldo es cada mes."],
+    ["experiencia", "doświadczenie", "Mam duże doświadczenie.", "Tengo mucha experiencia."],
+    ["entrevista de trabajo", "rozmowa kwalifikacyjna", "Jutro mam rozmowę kwalifikacyjną.", "Mañana tengo una entrevista de trabajo."],
+    ["período de prueba", "okres próbny", "Okres próbny trwa trzy miesiące.", "El período de prueba dura tres meses."],
+    ["licencia médica", "zwolnienie lekarskie", "Jestem na zwolnieniu lekarskim.", "Estoy con licencia médica."],
+    ["renuncia (aviso)", "wypowiedzenie", "Złożyłem wypowiedzenie.", "Presenté mi renuncia."],
+    ["ascenso", "awans", "Dostałem awans.", "Me ascendieron."],
+    ["aumento de sueldo", "podwyżka", "Chciałbym dostać podwyżkę.", "Quisiera un aumento de sueldo."],
+    ["horario de turnos", "grafik", "Grafik jest na tablicy.", "El horario está en el tablero."],
+    ["supervisor / gerente", "kierownik", "Kierownik jest na urlopie.", "El supervisor está de vacaciones."],
+    ["empleador", "pracodawca", "Mój pracodawca płaci na czas.", "Mi empleador paga a tiempo."],
+    ["seguridad", "bezpieczeństwo", "Bezpieczeństwo jest najważniejsze.", "La seguridad es lo más importante."]] },
+  { id: "w_adjetivos", level: "b1", title: "💬 Adjetivos y estados", words: [
+    ["cansado", "zmęczony", "Jestem bardzo zmęczony.", "Estoy muy cansado.", ["zmęczona"]],
+    ["contento", "zadowolony", "Jestem zadowolony z pracy.", "Estoy contento con el trabajo.", ["zadowolona"]],
+    ["enojado / nervioso", "zdenerwowany", "Szef jest zdenerwowany.", "El jefe está enojado.", ["zdenerwowana"]],
+    ["difícil", "trudny", "Polski jest trudny.", "El polaco es difícil."],
+    ["fácil", "łatwy", "To zadanie jest łatwe.", "Esta tarea es fácil."],
+    ["importante", "ważny", "To jest ważny dokument.", "Es un documento importante."],
+    ["peligroso", "niebezpieczny", "Ta maszyna jest niebezpieczna.", "Esta máquina es peligrosa."],
+    ["listo", "gotowy", "Jestem gotowy.", "Estoy listo.", ["gotowa"]],
+    ["libre", "wolny", "Czy to miejsce jest wolne?", "¿Este asiento está libre?"],
+    ["ocupado", "zajęty", "Jestem teraz zajęty.", "Ahora estoy ocupado.", ["zajęta"]],
+    ["con hambre", "głodny", "Jestem głodny.", "Tengo hambre.", ["głodna"]],
+    ["seguro (de algo)", "pewny", "Nie jestem pewny.", "No estoy seguro.", ["pewna"]]] }
+];
+
+const WMODE_DESC = {
+  card: "Fichas: piensa la palabra, dila en voz alta y gira la ficha. Tú decides si la sabías. Las que no sabías vuelven al final.",
+  say: "Pronunciar: escuchas la palabra y la repites al micrófono. La app revisa tu pronunciación.",
+  listen: "Escuchar: oyes la palabra en polaco (sin texto) y eliges qué significa."
+};
+
 const LEGEND = [
   ["sh", "como «sh» en inglés («show»)", "szkoła"],
   ["ch", "como en «chico», pero más dura", "czas"],
@@ -1126,7 +1341,7 @@ function soundCats(word) {
 const K = { settings: "pol_settings_v1", prefs: "pol_prefs_v1", stats: "pol_stats_v1", sounds: "pol_sounds_v1", srs: "pol_srs_v1", log: "pol_log_v1", theme: "pol_theme" };
 const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const settings = Object.assign({ rate: 0.9, phon: true, record: !IS_MOBILE, autoplay: true }, lsJSON(K.settings, {}));
-const prefs = Object.assign({ len: 20, mode: "repeat", level: "a1", soundTab: "guide" }, lsJSON(K.prefs, {}));
+const prefs = Object.assign({ len: 20, mode: "repeat", level: "a1", soundTab: "guide", wmode: "card", wdir: "es2pl", wlevel: "a1" }, lsJSON(K.prefs, {}));
 if (["a1", "a2", "b1"].indexOf(prefs.level) === -1) prefs.level = "a1";   // versión anterior: base / vida / trabajo
 let stats = lsJSON(K.stats, {});        // structId → {c, n, last}
 let soundStats = lsJSON(K.sounds, {});  // categoría → {c, n}
@@ -1420,6 +1635,7 @@ function showSection(sec) {
   document.querySelectorAll(".section-btn").forEach((b) => b.classList.toggle("active", b.dataset.section === sec));
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   if (sec === "phrases") { renderPhrasesHome(); switchView("phrases"); }
+  else if (sec === "words") { renderWordsHome(); switchView("words"); }
   else if (sec === "sounds") { renderSounds(); switchView("sounds"); }
   else { renderProgress(); switchView("progress"); }
 }
@@ -1539,9 +1755,11 @@ function renderDrill() {
       <button class="btn" id="slowBtn" type="button">🐢 Despacio</button>
     </div>`;
 
-  if (s.mode === "repeat") {
+  if (s.mode === "card") {
+    renderCard(d);
+  } else if (s.mode === "repeat") {
     card.innerHTML = `
-      <div class="prompt-label">Escucha y repite</div>
+      <div class="prompt-label">${d.word ? "Escucha y pronuncia la palabra" : "Escucha y repite"}</div>
       <div class="pl-big" id="plText">${wordsHtml(d.pl)}</div>
       ${phonHtml(d.pl)}
       <div class="es-small">${esc(d.es)}</div>
@@ -1592,7 +1810,7 @@ function renderDrill() {
       });
       if (!ok) b.classList.add("wrong");
       commitResult(ok, null);
-      $("revealBox").innerHTML = `<div style="margin-top:14px"><div class="pl-big" style="font-size:1.4rem">${wordsHtml(d.pl)}</div>${phonHtml(d.pl)}</div>`;
+      $("revealBox").innerHTML = `<div style="margin-top:14px"><div class="pl-big" style="font-size:1.4rem">${wordsHtml(d.pl)}</div>${phonHtml(d.pl)}${d.word ? exHtml(d) : ""}</div>`;
       renderMic("Opcional: toca 🎤 y repítela", null);
       renderFeedback(null, ok);
     });
@@ -1605,7 +1823,7 @@ function listenOptions(d) {
   const pick = [];
   const add = (x) => { if (pick.length < 3 && !seen.has(x.es)) { seen.add(x.es); pick.push(x); } };
   shuffle(session.pool).forEach(add);
-  if (pick.length < 3) shuffle(allDrills()).forEach(add);
+  if (pick.length < 3) shuffle(d.word ? allWords() : allDrills()).forEach(add);
   return shuffle([d].concat(pick));
 }
 
@@ -1678,7 +1896,8 @@ function commitResult(ok, r) {
     st.n++; if (ok) st.c++; st.last = Date.now();
     saveStats();
   }
-  srsRecord(d, ok);
+  if (d.word) { if (!d._rq) wsrsRecord(d, ok); }
+  else srsRecord(d, ok);
   if (r && r.words && normPl(r.heard)) {
     r.words.forEach((w) => soundCats(w.w).forEach((cat) => {
       const x = soundStats[cat] || (soundStats[cat] = { c: 0, n: 0 });
@@ -1726,6 +1945,7 @@ function renderFeedback(r, ok, extra) {
     html += `<div class="fb-line" style="margin-top:10px;font-size:1.15rem"><b>${wordsHtml(d.pl)}</b></div>${phonHtml(d.pl)}`;
   }
   if (session.mode === "listen" && !extra) html += `<div class="fb-line">«${esc(d.pl)}» = ${esc(d.es)}</div>`;
+  if (d.word && session.mode === "repeat") html += exHtml(d);
   html += `<div class="fb-actions">
       <button class="btn btn-small" id="fbNative" type="button">🔊 Nativo</button>
       <button class="btn btn-small" id="fbSlow" type="button">🐢</button>
@@ -1786,6 +2006,177 @@ function finishSession() {
   $("doneList").onclick = (e) => { const b = e.target.closest("[data-say-idx]"); if (b) speak(uniq[Number(b.dataset.sayIdx)].pl); };
   $("doneRepeat").hidden = !lastStart;
   switchView("done");
+}
+
+/* =========================================================================
+   PALABRAS (FICHAS)
+   ========================================================================= */
+const WK = { srs: "pol_wsrs_v1", mine: "pol_mywords_v1" };
+let wsrs = lsJSON(WK.srs, {});      // "w:palabra" → {box, due, d}
+let myWords = lsJSON(WK.mine, []);   // [[es, pl, ejemplo, ejemploEs]]
+const saveWsrs = () => lsSet(WK.srs, JSON.stringify(wsrs));
+const saveMine = () => lsSet(WK.mine, JSON.stringify(myWords));
+const WORD_MASTERED = 3;   // caja a partir de la cual la palabra cuenta como dominada
+
+function wordDrill(w, deckId) {
+  return { es: w[0], pl: w[1], ex: w[2] || "", exEs: w[3] || "", alts: w[4] || [], word: true, deck: deckId };
+}
+function wkey(pl) { return "w:" + normPl(pl); }
+function myDeck() { return { id: "mine", level: null, title: "⭐ Mis palabras", words: myWords }; }
+function findDeck(id) { return id === "mine" ? myDeck() : DECKS.find((d) => d.id === id); }
+let ALL_WORDS = null;
+function allWords() {
+  if (!ALL_WORDS) ALL_WORDS = [].concat(...DECKS.map((dk) => dk.words.map((w) => wordDrill(w, dk.id))));
+  return ALL_WORDS;
+}
+// Repetición espaciada de palabras: todas las practicadas entran; error → mañana.
+function wsrsRecord(d, ok) {
+  const k = wkey(d.pl);
+  const rec = wsrs[k] || (wsrs[k] = { box: 0 });
+  rec.d = { es: d.es, pl: d.pl, ex: d.ex, exEs: d.exEs, alts: d.alts || [], deck: d.deck };
+  rec.box = ok ? Math.min((rec.box || 0) + 1, SRS_DAYS.length - 1) : 0;
+  rec.due = startOfDay(Date.now()) + SRS_DAYS[rec.box] * DAY;
+  saveWsrs();
+}
+function wordsDue() {
+  const end = startOfDay(Date.now()) + DAY - 1;
+  return Object.values(wsrs).filter((r) => r.d && r.due <= end);
+}
+function deckMastered(deck) {
+  return deck.words.filter((w) => { const r = wsrs[wkey(w[1])]; return r && r.box >= WORD_MASTERED; }).length;
+}
+function wmodeToMode(m) { return m === "say" ? "repeat" : m === "listen" ? "listen" : "card"; }
+
+function startDeck(id) {
+  const deck = findDeck(id);
+  if (!deck || !deck.words.length) return;
+  const drills = deck.words.map((w) => wordDrill(w, deck.id));
+  const lv = LEVELS.find((l) => l.id === deck.level);
+  lastStart = () => startDeck(id);
+  session = newSession({
+    kind: "words", title: deck.title, badge: lv ? lv.name.split(" ")[0] + " " + lv.tag : "⭐",
+    pattern: "", note: WMODE_DESC[prefs.wmode], queue: shuffle(drills), pool: drills, mode: wmodeToMode(prefs.wmode)
+  });
+  beginSession();
+}
+function startWordReview() {
+  const due = shuffle(wordsDue()).slice(0, 30).map((r) => Object.assign({ word: true }, r.d));
+  if (!due.length) return;
+  lastStart = null;
+  session = newSession({ kind: "words", title: "Repaso de palabras", badge: "🧠", pattern: "", note: WMODE_DESC[prefs.wmode],
+    queue: due, pool: allWords(), mode: wmodeToMode(prefs.wmode) });
+  beginSession();
+}
+
+function exHtml(d) {
+  if (!d.ex) return "";
+  return `<div class="ex-line"><button class="btn btn-small" data-say="${esc(d.ex)}" type="button" aria-label="Escuchar ejemplo">🔊</button>
+    <div><b>${esc(d.ex)}</b>${settings.phon ? `<div class="ex-phon">${esc(phon(d.ex))}</div>` : ""}<small>${esc(d.exEs)}</small></div></div>`;
+}
+
+function renderCard(d) {
+  const es2pl = prefs.wdir !== "pl2es";
+  const plBlock = `<div class="pl-big">${wordsHtml(d.pl)}</div>${phonHtml(d.pl, true)}`;
+  const audio = `<div class="audio-row"><button class="btn" id="playBtn" type="button">🔊 Escuchar</button><button class="btn" id="slowBtn" type="button">🐢 Despacio</button></div>`;
+  const front = es2pl
+    ? `<div class="prompt-label">¿Cómo se dice en polaco?</div><div class="es-big">${esc(d.es)}</div>
+       <p class="es-small">Dila en voz alta y después gira la ficha.</p>`
+    : `<div class="prompt-label">¿Qué significa?</div>${plBlock}${audio}`;
+  const back = es2pl ? `${plBlock}${audio}${exHtml(d)}` : `<div class="es-big">${esc(d.es)}</div>${exHtml(d)}`;
+  $("drillCard").innerHTML = `
+    <div class="flashcard">${front}
+      <div class="audio-row" id="flipRow"><button class="btn btn-primary" id="flipBtn" type="button">↻ Girar ficha</button></div>
+      <div id="cardBack" hidden><hr class="card-sep">${back}
+        <div class="fc-actions">
+          <button class="btn" id="cardNo" type="button">✗ No la sabía</button>
+          <button class="btn btn-primary" id="cardYes" type="button">✓ La sabía</button>
+        </div>
+        <div class="fb-note" style="text-align:center">Teclado: espacio = girar · 1 = no la sabía · 2 = la sabía</div>
+      </div>
+    </div>`;
+  if (!es2pl) { bindAudio(d); if (settings.autoplay) setTimeout(() => speak(d.pl, { btn: "playBtn" }), 250); }
+  $("flipBtn").addEventListener("click", flipCard);
+  $("cardNo").addEventListener("click", () => cardAnswer(false));
+  $("cardYes").addEventListener("click", () => cardAnswer(true));
+}
+function flipCard() {
+  const back = $("cardBack");
+  if (!back || !back.hidden) return;
+  back.hidden = false;
+  $("flipRow").remove();
+  const d = currentDrill();
+  if (prefs.wdir !== "pl2es") { bindAudio(d); if (settings.autoplay) speak(d.pl, { btn: "playBtn" }); }
+}
+function cardAnswer(ok) {
+  if (checked || !$("cardBack") || $("cardBack").hidden) return;
+  const s = session, d = currentDrill();
+  commitResult(ok, null);
+  if (!ok && (d._rq || 0) < 2) s.queue.push(Object.assign({}, d, { _rq: (d._rq || 0) + 1 }));   // vuelve al final
+  nextDrill();
+}
+
+function renderWordsHome() {
+  document.querySelectorAll(".wmode-btn").forEach((b) => b.classList.toggle("active", b.dataset.wmode === prefs.wmode));
+  document.querySelectorAll(".wdir-btn").forEach((b) => b.classList.toggle("active", b.dataset.wdir === prefs.wdir));
+  $("wdirRow").hidden = prefs.wmode !== "card";
+  $("wmodeDesc").textContent = WMODE_DESC[prefs.wmode];
+
+  const due = wordsDue();
+  const tracked = Object.keys(wsrs).length;
+  $("wordReviewBox").innerHTML = due.length ? `
+    <div class="review-box">
+      <div><b>🧠 Repaso de palabras: ${due.length}</b>
+      <span>Cada palabra vuelve después de 1, 2, 4, 8, 16 y 32 días. Si fallas, vuelve mañana.</span></div>
+      <button class="btn btn-primary" id="wordReviewBtn" type="button">Repasar</button>
+    </div>` : tracked ? `<p class="level-desc">🧠 Repaso de palabras al día ✓ — ${tracked} palabras en seguimiento.</p>` : "";
+  if (due.length) $("wordReviewBtn").addEventListener("click", startWordReview);
+
+  $("wordLevelTabs").innerHTML = LEVELS.map((lv) => {
+    const n = DECKS.filter((d) => d.level === lv.id).length;
+    return `<button class="level-tab${lv.id === prefs.wlevel ? " active" : ""}" data-wlevel="${lv.id}" type="button">${esc(lv.name)}<small>${esc(lv.tag)} · ${n} grupos</small></button>`;
+  }).join("");
+  const decks = DECKS.filter((d) => d.level === prefs.wlevel).concat(myWords.length ? [myDeck()] : []);
+  $("deckGrid").innerHTML = decks.map((dk) => {
+    const m = deckMastered(dk), n = dk.words.length, p = n ? Math.round((m / n) * 100) : 0;
+    return `<button class="tile" data-deck="${dk.id}" type="button">
+      <div class="tile-top"><span class="tile-title">${esc(dk.title)}</span><span class="tile-pct">${m}/${n}</span></div>
+      <div class="tile-pattern">${esc(dk.words.slice(0, 3).map((w) => w[1]).join(" · "))}…</div>
+      <div class="tile-bar"><div style="width:${p}%;background:${pctColor(Math.max(p, 80))}"></div></div>
+      <div class="tile-meta">${n} palabras · ${m} dominadas</div>
+    </button>`;
+  }).join("");
+  renderMyWords();
+}
+
+function renderMyWords() {
+  $("myWords").innerHTML = `
+    <h3>⭐ Mis palabras</h3>
+    <p class="muted" style="margin-top:0">Agrega palabras de tu trabajo o de tu día a día. La pronunciación figurada se crea sola.</p>
+    <div class="my-form">
+      <input id="myEs" type="text" placeholder="Español (ej.: carretilla)" autocomplete="off">
+      <input id="myPl" type="text" placeholder="Polaco (ej.: taczka)" autocomplete="off" spellcheck="false">
+      <input id="myEx" type="text" placeholder="Ejemplo en polaco (opcional)" autocomplete="off" spellcheck="false">
+      <button class="btn btn-primary" id="myAdd" type="button">Agregar</button>
+    </div>
+    <div class="ex-phon" id="myPhon"></div>
+    ${myWords.length ? `<div class="done-list">${myWords.map((w, k) => `
+      <div class="done-item">
+        <button class="btn btn-small" data-say="${esc(w[1])}" type="button">🔊</button>
+        <div class="t"><div>${esc(w[1])}</div><small><i>${esc(phon(w[1]))}</i> · ${esc(w[0])}${w[2] ? " · " + esc(w[2]) : ""}</small></div>
+        <button class="btn btn-small" data-mydel="${k}" type="button" aria-label="Borrar">🗑️</button>
+      </div>`).join("")}</div>
+      <button class="btn btn-primary" data-deck="mine" type="button">Practicar mis palabras (${myWords.length})</button>` : ""}`;
+  const pl = $("myPl");
+  pl.addEventListener("input", () => { $("myPhon").textContent = pl.value.trim() ? "🗣️ " + phon(pl.value.trim()) : ""; });
+  const add = () => {
+    const es = $("myEs").value.trim(), p = pl.value.trim(), ex = $("myEx").value.trim();
+    if (!es || !p) { toast("Escribe la palabra en español y en polaco."); return; }
+    myWords.push([es, p, ex, ""]);
+    saveMine(); renderWordsHome();
+    $("myEs").focus();
+  };
+  $("myAdd").addEventListener("click", add);
+  ["myEs", "myPl", "myEx"].forEach((id) => $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") add(); }));
 }
 
 /* =========================================================================
@@ -1917,7 +2308,9 @@ function renderProgress() {
       <div class="stat-tile"><b>🔥 ${streak()}</b><span>días seguidos</span></div>
       <div class="stat-tile"><b>${totN}</b><span>frases dichas</span></div>
       <div class="stat-tile"><b>${acc}</b><span>aciertos</span></div>
-      <div class="stat-tile"><b>${srsDue().length}</b><span>para repasar hoy</span></div>
+      <div class="stat-tile"><b>${srsDue().length + wordsDue().length}</b><span>para repasar hoy</span></div>
+      <div class="stat-tile"><b>${Object.values(wsrs).filter((r) => r.box >= WORD_MASTERED).length}</b><span>palabras dominadas</span></div>
+      <div class="stat-tile"><b>${Object.keys(wsrs).length}</b><span>palabras practicadas</span></div>
     </div>
 
     <div class="panel"><h3>🔤 Tus sonidos</h3>
@@ -1954,7 +2347,7 @@ function renderProgress() {
       <div class="set-row"><div>Voz polaca<small>${voice ? esc(voice.name) + " (" + esc(voice.lang) + ")" : "No encontrada — se usará la voz por defecto del navegador"}</small></div>
         <button class="btn btn-small" id="voiceTest" type="button">🔊 Probar</button></div>
       <div class="set-row"><div>Micrófono<small>${SR ? "Reconocimiento de voz disponible ✓" : "Este navegador no reconoce voz. Usa Chrome, Edge o Safari."}</small></div></div>
-      <div class="set-row"><div>Borrar progreso<small>Estadísticas, repasos y sesiones</small></div>
+      <div class="set-row"><div>Borrar progreso<small>Estadísticas, repasos y sesiones (tus palabras propias se conservan)</small></div>
         <button class="btn btn-small" id="resetBtn" type="button">Borrar…</button></div>
     </div>`;
 
@@ -1962,8 +2355,8 @@ function renderProgress() {
   $("resetBtn").addEventListener("click", (e) => {
     const b = e.currentTarget;
     if (b.dataset.armed) {
-      stats = {}; soundStats = {}; srs = {}; sessionLog = [];
-      saveStats(); saveSounds(); saveSrs(); saveLog();
+      stats = {}; soundStats = {}; srs = {}; sessionLog = []; wsrs = {};
+      saveStats(); saveSounds(); saveSrs(); saveLog(); saveWsrs();
       renderProgress(); toast("Progreso borrado.");
     } else { b.dataset.armed = "1"; b.textContent = "¿Seguro? Toca otra vez"; }
   });
@@ -1975,6 +2368,9 @@ function renderProgress() {
 document.querySelectorAll(".section-btn").forEach((b) => b.addEventListener("click", () => showSection(b.dataset.section)));
 document.querySelectorAll(".len-btn").forEach((b) => b.addEventListener("click", () => { prefs.len = Number(b.dataset.len); savePrefs(); renderPhrasesHome(); }));
 document.querySelectorAll(".mode-btn").forEach((b) => b.addEventListener("click", () => { prefs.mode = b.dataset.mode; savePrefs(); renderPhrasesHome(); }));
+document.querySelectorAll(".wmode-btn").forEach((b) => b.addEventListener("click", () => { prefs.wmode = b.dataset.wmode; savePrefs(); renderWordsHome(); }));
+document.querySelectorAll(".wdir-btn").forEach((b) => b.addEventListener("click", () => { prefs.wdir = b.dataset.wdir; savePrefs(); renderWordsHome(); }));
+$("wordLevelTabs").addEventListener("click", (e) => { const b = e.target.closest(".level-tab"); if (b) { prefs.wlevel = b.dataset.wlevel; savePrefs(); renderWordsHome(); } });
 document.querySelectorAll(".snd-tab").forEach((b) => b.addEventListener("click", () => { prefs.soundTab = b.dataset.tab; savePrefs(); if (b.dataset.tab === "pairs") newPairsQuiz(); renderSounds(); }));
 $("levelTabs").addEventListener("click", (e) => { const b = e.target.closest(".level-tab"); if (b) { prefs.level = b.dataset.level; savePrefs(); renderPhrasesHome(); } });
 
@@ -1994,6 +2390,10 @@ document.addEventListener("click", (e) => {
     const el = $("snd-" + snd.dataset.sound); if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     return;
   }
+  const dk = e.target.closest("[data-deck]");
+  if (dk) { startDeck(dk.dataset.deck); return; }
+  const del = e.target.closest("[data-mydel]");
+  if (del) { myWords.splice(Number(del.dataset.mydel), 1); saveMine(); renderWordsHome(); return; }
   const st = e.target.closest("[data-struct]");
   if (st) { startStructure(st.dataset.struct); return; }
   const set = e.target.closest(".set-btn");
@@ -2010,7 +2410,14 @@ $("doneRepeat").addEventListener("click", () => { if (lastStart) lastStart(); })
 $("doneHome").addEventListener("click", () => showSection(currentSection));
 
 document.addEventListener("keydown", (e) => {
-  if (e.key !== "Enter" || e.target.closest("input, textarea")) return;
+  if (e.target.closest && e.target.closest("input, textarea, button")) { if (e.key === " " || e.key === "Enter") return; }
+  if (e.target.closest && e.target.closest("input, textarea")) return;
+  if (session && session.mode === "card" && $("view-drill").classList.contains("active") && $("cardBack")) {
+    if (e.key === " " && $("cardBack").hidden) { e.preventDefault(); flipCard(); return; }
+    if (e.key === "1") { cardAnswer(false); return; }
+    if (e.key === "2") { cardAnswer(true); return; }
+  }
+  if (e.key !== "Enter") return;
   if ($("view-drill").classList.contains("active") && checked) {
     e.preventDefault();
     nextDrill();
