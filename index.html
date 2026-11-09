@@ -1,0 +1,1771 @@
+<!doctype html>
+<html lang="es" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Polaco en práctica</title>
+<style>
+:root {
+  --bg: #f6f4f4;
+  --card: #ffffff;
+  --card-2: #faf7f7;
+  --text: #221a1c;
+  --muted: #6f6467;
+  --border: #ebe3e4;
+  --accent: #d1344b;
+  --accent-dark: #b3263c;
+  --accent-soft: #fde8eb;
+  --track: #ebe3e4;
+  --good: #15803d;
+  --good-bg: #dcfce7;
+  --bad: #dc2626;
+  --bad-bg: #fee2e2;
+  --warn: #a16207;
+  --warn-bg: #fef3c7;
+  --shadow: 0 6px 24px rgba(60, 20, 30, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161214; --card: #221c1e; --card-2: #2a2326; --text: #f1eaeb; --muted: #a8999c;
+    --border: #3a3033; --accent: #ff6b81; --accent-dark: #f2556d; --accent-soft: #3d1f27;
+    --track: #3a3033; --good: #4ade80; --good-bg: #14361f; --bad: #f87171; --bad-bg: #3a1a1a;
+    --warn: #fcd34d; --warn-bg: #3d3113; --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161214; --card: #221c1e; --card-2: #2a2326; --text: #f1eaeb; --muted: #a8999c;
+  --border: #3a3033; --accent: #ff6b81; --accent-dark: #f2556d; --accent-soft: #3d1f27;
+  --track: #3a3033; --good: #4ade80; --good-bg: #14361f; --bad: #f87171; --bad-bg: #3a1a1a;
+  --warn: #fcd34d; --warn-bg: #3d3113; --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+button { font: inherit; color: inherit; }
+#app { max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; }
+
+.top { text-align: center; margin-bottom: 20px; position: relative; }
+.top h1 { margin: 0 0 4px; padding: 0 48px; font-size: 1.7rem; letter-spacing: -0.02em; }
+.top p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+.theme-toggle {
+  position: absolute; top: 0; right: 0; width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--card); font-size: 1.1rem; cursor: pointer;
+}
+
+.section-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 14px; padding: 5px; margin-bottom: 20px; }
+.section-btn { border: 0; background: transparent; padding: 9px 6px; border-radius: 10px; font-weight: 600;
+  cursor: pointer; font-size: 0.95rem; }
+.section-btn.active { background: var(--accent); color: #fff; }
+
+.view { display: none; animation: fade 0.25s ease; }
+.view.active { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.len-row { display: flex; align-items: center; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+.len-label { color: var(--muted); font-size: 0.9rem; }
+.len-opt { border: 1px solid var(--border); background: var(--card); border-radius: 999px; padding: 6px 14px;
+  font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.len-opt:hover { border-color: var(--accent); }
+.len-opt.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.mode-desc { text-align: center; color: var(--muted); font-size: 0.88rem; margin: -4px 0 16px; }
+
+.level-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.level-tab { border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 10px 6px;
+  font-weight: 700; cursor: pointer; font-size: 0.92rem; }
+.level-tab.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-dark); }
+:root[data-theme="dark"] .level-tab.active { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .level-tab.active { color: var(--accent); } }
+.level-desc { text-align: center; color: var(--muted); font-size: 0.9rem; margin: 0 0 14px; }
+
+.struct-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.tile { text-align: left; border: 1px solid var(--border); background: var(--card); border-radius: 14px;
+  padding: 14px; cursor: pointer; transition: border-color 0.15s, transform 0.15s; box-shadow: var(--shadow); }
+.tile:hover { border-color: var(--accent); transform: translateY(-2px); }
+.tile-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.tile-title { font-weight: 700; }
+.tile-pct { font-size: 0.85rem; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.tile-pattern { color: var(--accent-dark); font-size: 0.88rem; margin: 4px 0 8px; font-weight: 600; }
+:root[data-theme="dark"] .tile-pattern { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tile-pattern { color: var(--accent); } }
+.tile-bar { height: 5px; background: var(--track); border-radius: 99px; overflow: hidden; }
+.tile-bar > div { height: 100%; background: var(--good); border-radius: 99px; }
+.tile-meta { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+
+.review-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 14px; padding: 12px 16px; margin-bottom: 16px; }
+.review-box b { display: block; }
+.review-box span { color: var(--muted); font-size: 0.88rem; }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px 18px; box-shadow: var(--shadow); }
+.btn { border: 1px solid var(--border); background: var(--card); border-radius: 12px; padding: 9px 16px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; font-size: 0.93rem; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
+.btn-small { padding: 5px 11px; font-size: 0.85rem; border-radius: 10px; }
+.btn.speaking { border-color: var(--accent); background: var(--accent-soft); }
+.link-back { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 4px 0; font-size: 0.92rem; }
+.link-back:hover { color: var(--accent); }
+
+.drill-top { display: flex; justify-content: space-between; }
+.drill-head { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; }
+.drill-head h2 { margin: 0; font-size: 1.3rem; }
+.badge { background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; font-size: 0.8rem; padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
+:root[data-theme="dark"] .badge { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge { color: var(--accent); } }
+.drill-pattern { font-weight: 700; color: var(--accent-dark); margin-bottom: 4px; }
+:root[data-theme="dark"] .drill-pattern { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .drill-pattern { color: var(--accent); } }
+.drill-note { color: var(--muted); font-size: 0.9rem; margin-bottom: 12px; }
+.progress-wrap { margin-bottom: 14px; }
+.progress-bar { height: 7px; background: var(--track); border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+.progress-meta { display: flex; justify-content: space-between; font-size: 0.83rem; color: var(--muted); margin-top: 4px; }
+
+.prompt-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; margin-bottom: 8px; text-align: center; }
+.pl-big { font-size: 1.75rem; font-weight: 700; text-align: center; line-height: 1.3; letter-spacing: -0.01em; }
+.es-big { font-size: 1.45rem; font-weight: 600; text-align: center; line-height: 1.35; }
+.es-small { text-align: center; color: var(--muted); margin-top: 6px; }
+.phon { text-align: center; font-style: italic; color: var(--accent-dark); font-size: 1.1rem; margin-top: 6px; }
+:root[data-theme="dark"] .phon { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .phon { color: var(--accent); } }
+.phon::before { content: "🗣️ "; font-style: normal; font-size: 0.85em; }
+.word { cursor: pointer; border-radius: 6px; padding: 0 2px; transition: background 0.15s; }
+.word:hover { background: var(--accent-soft); }
+.w-ok { color: var(--good); }
+.w-close { color: var(--warn); background: var(--warn-bg); }
+.w-miss { color: var(--bad); background: var(--bad-bg); text-decoration: underline wavy; text-underline-offset: 4px; }
+.audio-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 14px 0 6px; }
+
+.speak-box { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 14px; }
+.mic-btn { width: 84px; height: 84px; border-radius: 50%; border: 0; background: var(--accent); color: #fff;
+  font-size: 2.1rem; cursor: pointer; box-shadow: 0 6px 18px rgba(209, 52, 75, 0.35); transition: transform 0.15s; }
+.mic-btn:hover { transform: scale(1.05); }
+.mic-btn.listening { animation: pulse 1.1s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(209, 52, 75, 0.55); } 70% { box-shadow: 0 0 0 22px rgba(209, 52, 75, 0); } 100% { box-shadow: 0 0 0 0 rgba(209, 52, 75, 0); } }
+.speak-status { font-size: 0.9rem; color: var(--muted); text-align: center; min-height: 1.4em; }
+.speak-status.live { color: var(--accent); font-weight: 600; }
+.speak-status.err { color: var(--bad); }
+.self-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+
+.choices { display: grid; gap: 8px; margin-top: 16px; }
+.choice { text-align: left; border: 1px solid var(--border); background: var(--card-2); border-radius: 12px; padding: 12px 14px; cursor: pointer; font-weight: 600; }
+.choice:hover:not(:disabled) { border-color: var(--accent); }
+.choice.right { background: var(--good-bg); border-color: var(--good); color: var(--good); }
+.choice.wrong { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+.big-play { width: 92px; height: 92px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; font-size: 2.3rem; cursor: pointer; }
+
+.feedback { margin-top: 16px; }
+.fb { border-radius: 14px; padding: 14px 16px; border: 1px solid; }
+.fb-good { background: var(--good-bg); border-color: var(--good); }
+.fb-bad { background: var(--bad-bg); border-color: var(--bad); }
+.fb-neutral { background: var(--card-2); border-color: var(--border); }
+.fb-title { font-weight: 800; margin-bottom: 6px; }
+.fb-good .fb-title { color: var(--good); }
+.fb-bad .fb-title { color: var(--bad); }
+.fb-words { font-size: 1.35rem; font-weight: 700; line-height: 1.6; background: var(--card); border-radius: 10px; padding: 6px 10px; }
+.fb-line { font-size: 0.92rem; margin-top: 6px; }
+.fb-line i { color: var(--muted); }
+.fb-tips { margin-top: 10px; display: grid; gap: 6px; }
+.tip { background: var(--card); border-radius: 10px; padding: 8px 10px; font-size: 0.88rem; border-left: 4px solid var(--accent); }
+.tip b { color: var(--accent-dark); }
+:root[data-theme="dark"] .tip b { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tip b { color: var(--accent); } }
+.fb-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+.fb-actions .btn-primary { margin-left: auto; }
+.fb-note { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+
+.done-card { text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 26px 18px; box-shadow: var(--shadow); }
+.done-card h2 { margin: 8px 0 14px; }
+.done-ring { width: 140px; height: 140px; border-radius: 50%; margin: 0 auto 12px; display: grid; place-items: center; }
+.done-ring-inner { width: 112px; height: 112px; border-radius: 50%; background: var(--card); display: flex; flex-direction: column; justify-content: center; }
+.done-pct { font-size: 1.8rem; font-weight: 800; }
+.done-pct-label { font-size: 0.78rem; color: var(--muted); }
+.done-list { text-align: left; margin: 16px 0; display: grid; gap: 6px; }
+.done-item { display: flex; gap: 10px; align-items: center; background: var(--card-2); border-radius: 10px; padding: 8px 10px; }
+.done-item .t { flex: 1; min-width: 0; }
+.done-item .t div:first-child { font-weight: 700; }
+.done-item small { color: var(--muted); display: block; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.chip { border: 1px solid var(--border); background: var(--card-2); border-radius: 99px; padding: 4px 11px; font-size: 0.85rem; cursor: pointer; font-weight: 600; }
+.chip:hover { border-color: var(--accent); }
+.done-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+
+/* Sonidos */
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.legend-item { background: var(--card-2); border-radius: 10px; padding: 8px 10px; cursor: pointer; border: 1px solid transparent; font-size: 0.88rem; text-align: left; }
+.legend-item:hover { border-color: var(--accent); }
+.legend-item b { font-style: italic; color: var(--accent-dark); font-size: 1.05rem; margin-right: 4px; }
+:root[data-theme="dark"] .legend-item b { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .legend-item b { color: var(--accent); } }
+.sound-card { margin-top: 12px; }
+.sound-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.sound-letters { font-size: 1.5rem; font-weight: 800; color: var(--accent); min-width: 64px; }
+.sound-head h3 { margin: 0; font-size: 1.1rem; }
+.sound-desc { font-size: 0.93rem; margin: 6px 0 10px; }
+.ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.ex { text-align: left; border: 1px solid var(--border); background: var(--card-2); border-radius: 10px; padding: 6px 9px; cursor: pointer; }
+.ex:hover { border-color: var(--accent); }
+.ex b { display: block; }
+.ex i { color: var(--accent-dark); font-size: 0.86rem; }
+:root[data-theme="dark"] .ex i { color: var(--accent); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ex i { color: var(--accent); } }
+.ex small { color: var(--muted); display: block; font-size: 0.78rem; }
+.sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 700; margin: 12px 0 6px; }
+.pair-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+.pair-row .vs { color: var(--muted); font-size: 0.85rem; }
+.sound-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.pairs-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.pairs-opts .choice { text-align: center; }
+.pairs-opts .choice b { display: block; font-size: 1.4rem; }
+.pairs-opts .choice i { font-weight: 500; font-size: 0.9rem; }
+.pairs-opts .choice small { display: block; font-weight: 500; color: var(--muted); }
+
+/* Progreso */
+.stat-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+@media (max-width: 560px) { .stat-tiles { grid-template-columns: repeat(2, 1fr); } }
+.stat-tile { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; text-align: center; }
+.stat-tile b { display: block; font-size: 1.5rem; }
+.stat-tile span { font-size: 0.8rem; color: var(--muted); }
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+.panel h3 { margin: 0 0 10px; font-size: 1.05rem; }
+.bar-row { display: grid; grid-template-columns: 150px 1fr 50px auto; gap: 10px; align-items: center; margin-bottom: 8px; font-size: 0.9rem; }
+@media (max-width: 560px) { .bar-row { grid-template-columns: 100px 1fr 44px; } .bar-row .btn { grid-column: 1 / -1; justify-self: start; } }
+.bar { height: 9px; background: var(--track); border-radius: 99px; overflow: hidden; }
+.bar > div { height: 100%; border-radius: 99px; }
+.muted { color: var(--muted); font-size: 0.9rem; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.set-row:last-child { border-bottom: 0; }
+.set-row small { display: block; color: var(--muted); }
+.switch { display: flex; gap: 4px; }
+.log-row { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 5px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+.log-row:last-child { border-bottom: 0; }
+
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+  padding: 10px 16px; border-radius: 12px; font-size: 0.9rem; max-width: min(92vw, 560px); z-index: 50; box-shadow: var(--shadow); }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Cambiar tema" title="Tema claro / oscuro">🌙</button>
+    <h1>Polaco en práctica 🇵🇱</h1>
+    <p>Frases para la vida diaria y el trabajo · escucha, repite y habla</p>
+  </header>
+
+  <div class="section-switch">
+    <button class="section-btn active" data-section="phrases" type="button">🗣️ Frases</button>
+    <button class="section-btn" data-section="sounds" type="button">🔤 Sonidos</button>
+    <button class="section-btn" data-section="progress" type="button">📈 Progreso</button>
+  </div>
+
+  <!-- FRASES: INICIO -->
+  <section id="view-phrases" class="view active">
+    <div class="len-row">
+      <span class="len-label">Repeticiones:</span>
+      <button class="len-opt len-btn" data-len="10" type="button">10×</button>
+      <button class="len-opt len-btn" data-len="20" type="button">20×</button>
+      <button class="len-opt len-btn" data-len="40" type="button">40×</button>
+    </div>
+    <div class="len-row">
+      <span class="len-label">Ejercicio:</span>
+      <button class="len-opt mode-btn" data-mode="repeat" type="button">🔁 Escucha y repite</button>
+      <button class="len-opt mode-btn" data-mode="translate" type="button">🎤 Dilo en polaco</button>
+      <button class="len-opt mode-btn" data-mode="listen" type="button">👂 ¿Qué escuchas?</button>
+    </div>
+    <p class="mode-desc" id="modeDesc"></p>
+    <div id="reviewBox"></div>
+    <div class="level-tabs" id="levelTabs"></div>
+    <p class="level-desc" id="levelDesc"></p>
+    <div class="struct-grid" id="structGrid"></div>
+  </section>
+
+  <!-- EJERCICIO -->
+  <section id="view-drill" class="view">
+    <div class="drill-top">
+      <button class="link-back" id="drillBack" type="button">← Volver</button>
+      <button class="link-back" id="drillEnd" type="button">Terminar ■</button>
+    </div>
+    <div class="drill-head"><span class="badge" id="drillBadge"></span><h2 id="drillTitle"></h2></div>
+    <div class="drill-pattern" id="drillPattern"></div>
+    <div class="drill-note" id="drillNote"></div>
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="drillFill"></div></div>
+      <div class="progress-meta"><span id="drillCounter"></span><span id="drillScore">—</span></div>
+    </div>
+    <div class="card" id="drillCard"></div>
+  </section>
+
+  <!-- RESUMEN -->
+  <section id="view-done" class="view">
+    <div class="done-card">
+      <span class="badge" id="doneBadge"></span>
+      <h2 id="doneTitle"></h2>
+      <div class="done-ring" id="doneRing"><div class="done-ring-inner"><span class="done-pct" id="donePct">0%</span><span class="done-pct-label">aciertos</span></div></div>
+      <p id="doneMsg"></p>
+      <div id="doneSounds"></div>
+      <div class="done-list" id="doneList"></div>
+      <div class="done-actions">
+        <button class="btn btn-primary" id="doneRepeat" type="button">Repetir otra vez</button>
+        <button class="btn" id="doneHome" type="button">Elegir otro tema</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SONIDOS -->
+  <section id="view-sounds" class="view">
+    <div class="len-row">
+      <button class="len-opt snd-tab" data-tab="guide" type="button">📖 Guía de sonidos</button>
+      <button class="len-opt snd-tab" data-tab="pairs" type="button">👂 Pares mínimos</button>
+      <button class="len-opt snd-tab" data-tab="twisters" type="button">👅 Trabalenguas</button>
+    </div>
+    <div id="soundsBody"></div>
+  </section>
+
+  <!-- PROGRESO -->
+  <section id="view-progress" class="view">
+    <div id="progressBody"></div>
+  </section>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================================
+   CONTENIDO
+   phrases:   [español, polaco, [alternativas aceptadas]]
+   templates: { es: "... {a} ...", pl: "... {b} ...", alt: ["... {b} ..."],
+                fills: [[es, pl, plConCifras?]] }
+   ========================================================================= */
+const LEVELS = [
+  {
+    id: "base", name: "🌱 Primeros pasos",
+    desc: "Cortesía, presentarse y pedir cosas. Lo que necesitas desde el primer día.",
+    structures: [
+      {
+        id: "saludos", title: "Saludos y cortesía", pattern: "Dzień dobry · Dziękuję · Przepraszam",
+        note: "«Proszę» sirve para «por favor», «aquí tiene» y «¿perdón?». 🔈 Ojo: en «dzień» la «dz'» es suave, casi como la «y» de «yo» dicha con fuerza.",
+        phrases: [
+          ["Buenos días / Buenas tardes", "Dzień dobry."],
+          ["Buenas noches (al llegar)", "Dobry wieczór."],
+          ["Hola / Chao (informal)", "Cześć."],
+          ["Adiós (formal)", "Do widzenia."],
+          ["Nos vemos (informal)", "Na razie."],
+          ["Gracias", "Dziękuję."],
+          ["Muchas gracias", "Dziękuję bardzo."],
+          ["Por favor", "Proszę."],
+          ["Perdón / Disculpe", "Przepraszam."],
+          ["De nada", "Nie ma za co."],
+          ["Buenas noches (al despedirse)", "Dobranoc."],
+          ["¡Buen provecho!", "Smacznego!"],
+          ["Mucho gusto", "Miło mi."],
+          ["No, gracias", "Nie, dziękuję."]
+        ]
+      },
+      {
+        id: "entender", title: "Cuando no entiendes", pattern: "Nie rozumiem · Proszę mówić wolniej",
+        note: "«pan» = usted (a un hombre), «pani» = usted (a una mujer). Se aceptan las dos. 🔈 La «w» siempre es «v» con dientes y labio: «wolniej» = «volñei».",
+        phrases: [
+          ["No entiendo", "Nie rozumiem."],
+          ["Hablo un poco de polaco", "Mówię trochę po polsku."],
+          ["¿Puede repetir, por favor?", "Czy może pan powtórzyć?", ["Czy może pani powtórzyć?", "Może pan powtórzyć?", "Może pani powtórzyć?"]],
+          ["Más despacio, por favor", "Proszę mówić wolniej."],
+          ["¿Habla español?", "Czy mówi pan po hiszpańsku?", ["Czy mówi pani po hiszpańsku?"]],
+          ["¿Habla inglés?", "Czy mówi pani po angielsku?", ["Czy mówi pan po angielsku?"]],
+          ["¿Qué significa esto?", "Co to znaczy?"],
+          ["¿Cómo se dice en polaco?", "Jak to jest po polsku?"],
+          ["No sé", "Nie wiem."],
+          ["Un momento, por favor", "Chwileczkę."],
+          ["¿Puede escribirlo?", "Czy może pan to napisać?", ["Czy może pani to napisać?"]]
+        ]
+      },
+      {
+        id: "presentarse", title: "Presentarse", pattern: "Jestem z ___ · Mieszkam w ___",
+        note: "Después de «z» (de) y «w» (en) el país o la ciudad cambia de terminación: Polska → w Polsce. 🔈 «w» antes de p, k, t… suena «f»: «w Polsce» = «f pólstse».",
+        templates: [
+          { es: "Soy de {a}.", pl: "Jestem z {b}.", alt: ["Ja jestem z {b}."], fills: [
+            ["Colombia", "Kolumbii"], ["Venezuela", "Wenezueli"], ["Perú", "Peru"], ["Argentina", "Argentyny"],
+            ["Chile", "Chile"], ["Ecuador", "Ekwadoru"], ["Bolivia", "Boliwii"], ["Paraguay", "Paragwaju"],
+            ["México", "Meksyku"], ["España", "Hiszpanii"]] },
+          { es: "Vivo en {a}.", pl: "Mieszkam w {b}.", fills: [
+            ["Polonia", "Polsce"], ["Varsovia", "Warszawie"], ["Cracovia", "Krakowie"], ["Breslavia (Wrocław)", "Wrocławiu"],
+            ["Poznań", "Poznaniu"], ["Gdansk", "Gdańsku"], ["Lodz (Łódź)", "Łodzi"]] }
+        ],
+        phrases: [
+          ["¿Cómo te llamas?", "Jak masz na imię?"],
+          ["Hablo español", "Mówię po hiszpańsku."],
+          ["Tengo veinticinco años", "Mam dwadzieścia pięć lat.", ["Mam 25 lat."]],
+          ["Vivo en Polonia desde hace un año", "Mieszkam w Polsce od roku."]
+        ]
+      },
+      {
+        id: "pedir", title: "Pedir algo: Poproszę…", pattern: "Poproszę ___ · Chciałbym ___",
+        note: "«Poproszę» = «me da…, por favor». La palabra cambia: kawa → kawę. «Chciałbym» lo dice un hombre, «Chciałabym» una mujer (las dos valen). 🔈 La «ł» suena «u»: «chciałbym» = «jch'áubɨm».",
+        templates: [
+          { es: "Me da {a}, por favor.", pl: "Poproszę {b}.", alt: ["Proszę {b}."], fills: [
+            ["un café", "kawę"], ["un té", "herbatę"], ["agua", "wodę"], ["una cerveza", "piwo"], ["pan", "chleb"],
+            ["la cuenta", "rachunek"], ["un boleto", "bilet"], ["la carta (el menú)", "kartę"], ["el recibo", "paragon"]] },
+          { es: "Quisiera {a}.", pl: "Chciałbym {b}.", alt: ["Chciałabym {b}."], fills: [
+            ["un café con leche", "kawę z mlekiem"], ["pagar", "zapłacić"], ["hacer una reserva", "zrobić rezerwację"],
+            ["preguntar algo", "o coś zapytać"], ["abrir una cuenta en el banco", "założyć konto w banku"]] }
+        ]
+      }
+    ]
+  },
+  {
+    id: "vida", name: "🏙️ Vida diaria",
+    desc: "Calle, tienda, transporte, médico. Patrones que se repiten con distintas palabras.",
+    structures: [
+      {
+        id: "donde", title: "¿Dónde está…?", pattern: "Gdzie jest ___?",
+        note: "Un patrón para todo. 🔈 «gdzie» empieza con dos consonantes: no digas «eg-dzie», une la g y la dz': «gdzh'e».",
+        templates: [{ es: "¿Dónde está {a}?", pl: "Gdzie jest {b}?", alt: ["Przepraszam, gdzie jest {b}?"], fills: [
+          ["el baño", "toaleta"], ["la estación de tren", "dworzec"], ["la farmacia", "apteka"], ["la parada de bus", "przystanek"],
+          ["la tienda", "sklep"], ["el banco", "bank"], ["el hospital", "szpital"], ["el correo", "poczta"],
+          ["el metro", "metro"], ["la salida", "wyjście"], ["la entrada", "wejście"], ["el ascensor", "winda"]] }]
+      },
+      {
+        id: "compras", title: "Comprar y pagar", pattern: "Ile kosztuje ___?",
+        note: "«Ile» = cuánto. 🔈 «kosztuje» tiene «sh» (sz) y no «s»: «koshtúie».",
+        templates: [{ es: "¿Cuánto cuesta {a}?", pl: "Ile kosztuje {b}?", fills: [
+          ["el boleto", "bilet"], ["este pan", "ten chleb"], ["esta chaqueta", "ta kurtka"], ["el café", "kawa"],
+          ["el cuarto", "pokój"], ["este teléfono", "ten telefon"]] }],
+        phrases: [
+          ["¿Cuánto cuesta esto?", "Ile to kosztuje?"],
+          ["¿Puedo pagar con tarjeta?", "Czy mogę zapłacić kartą?"],
+          ["Pago en efectivo", "Płacę gotówką."],
+          ["Es demasiado caro", "To jest za drogie."],
+          ["No necesito bolsa", "Nie potrzebuję torby."],
+          ["Solo estoy mirando", "Tylko oglądam."]
+        ]
+      },
+      {
+        id: "transporte", title: "Transporte", pattern: "Jak dojechać ___? · Poproszę bilet do ___",
+        note: "«do» = a / hacia (y la ciudad cambia: Kraków → do Krakowa). 🔈 «jechać» tiene «ch'» suave al final: «iéjach'».",
+        templates: [
+          { es: "¿Cómo llego {a}?", pl: "Jak dojechać {b}?", fills: [
+            ["al centro", "do centrum"], ["a la estación", "na dworzec"], ["al aeropuerto", "na lotnisko"],
+            ["al hospital", "do szpitala"], ["a esta dirección", "pod ten adres"]] },
+          { es: "Un boleto a {a}, por favor.", pl: "Poproszę bilet do {b}.", fills: [
+            ["Cracovia", "Krakowa"], ["Varsovia", "Warszawy"], ["Gdansk", "Gdańska"], ["Poznań", "Poznania"], ["Breslavia", "Wrocławia"]] }
+        ],
+        phrases: [
+          ["¿Este bus va al centro?", "Czy ten autobus jedzie do centrum?"],
+          ["¿Dónde me bajo?", "Gdzie mam wysiąść?"]
+        ]
+      },
+      {
+        id: "salud", title: "En el médico", pattern: "Boli mnie ___.",
+        note: "«Boli mnie głowa» = literalmente «me duele la cabeza». Si es plural: «Bolą mnie plecy». 🔈 «głowa» = «guóva»: la ł es «u».",
+        templates: [{ es: "Me duele {a}.", pl: "Boli mnie {b}.", fills: [
+          ["la cabeza", "głowa"], ["el estómago", "brzuch"], ["una muela", "ząb"], ["la garganta", "gardło"],
+          ["la pierna", "noga"], ["la mano", "ręka"], ["el oído", "ucho"]] }],
+        phrases: [
+          ["Me duele la espalda", "Bolą mnie plecy."],
+          ["Estoy enfermo / enferma", "Jestem chory.", ["Jestem chora."]],
+          ["Necesito un médico", "Potrzebuję lekarza."],
+          ["Tengo fiebre", "Mam gorączkę."],
+          ["Soy alérgico a la penicilina", "Mam alergię na penicylinę."],
+          ["¡Llame a una ambulancia!", "Proszę wezwać karetkę!"]
+        ]
+      },
+      {
+        id: "necesito", title: "Necesito / Quiero", pattern: "Potrzebuję ___ · Chcę ___",
+        note: "Después de «potrzebuję» la palabra cambia: pomoc → pomocy. 🔈 «potrzebuję»: la rz después de t suena «sh»: «potshebúie».",
+        templates: [
+          { es: "Necesito {a}.", pl: "Potrzebuję {b}.", fills: [
+            ["ayuda", "pomocy"], ["un médico", "lekarza"], ["un taxi", "taksówki"], ["un momento", "chwili"],
+            ["más tiempo", "więcej czasu"], ["un intérprete", "tłumacza"], ["un cargador", "ładowarki"]] },
+          { es: "Quiero {a}.", pl: "Chcę {b}.", fills: [
+            ["ir a casa", "iść do domu"], ["descansar", "odpocząć"], ["comer algo", "coś zjeść"],
+            ["comprar un boleto", "kupić bilet"], ["aprender polaco", "uczyć się polskiego"]] }
+        ]
+      },
+      {
+        id: "puedo", title: "¿Puedo…?", pattern: "Czy mogę ___?",
+        note: "«Czy» abre la pregunta (en la conversación se puede omitir). 🔈 «czy» = «chɨ»: ch dura y la «y» oscura.",
+        templates: [{ es: "¿Puedo {a}?", pl: "Czy mogę {b}?", alt: ["Mogę {b}?"], fills: [
+          ["pagar con tarjeta", "zapłacić kartą"], ["sentarme aquí", "tu usiąść"], ["abrir la ventana", "otworzyć okno"],
+          ["preguntar algo", "o coś zapytać"], ["probármelo", "to przymierzyć"], ["usar el baño", "skorzystać z toalety"], ["entrar", "wejść"]] }]
+      },
+      {
+        id: "gustos", title: "Me gusta / No me gusta", pattern: "Lubię ___ · Nie lubię ___",
+        note: "Con «nie» la palabra cambia otra vez: Lubię kawę → Nie lubię kawy. Repite y deja que el oído lo aprenda. 🔈 «lubię» termina en «e» casi sin nasal: «lúbie».",
+        templates: [
+          { es: "Me gusta {a}.", pl: "Lubię {b}.", fills: [
+            ["el café", "kawę"], ["el fútbol", "piłkę nożną"], ["cocinar", "gotować"], ["bailar", "tańczyć"], ["la música", "muzykę"], ["Polonia", "Polskę"]] },
+          { es: "No me gusta {a}.", pl: "Nie lubię {b}.", fills: [
+            ["el frío", "zimna"], ["la lluvia", "deszczu"], ["esperar", "czekać"], ["madrugar", "wcześnie wstawać"], ["el café", "kawy"]] }
+        ]
+      },
+      {
+        id: "hora", title: "La hora y los días", pattern: "Która jest godzina? · Jest ___.",
+        note: "Las horas se dicen como ordinales en femenino: siódma = «la séptima (hora)». 🔈 «która» = «ktúra», la ó suena «u».",
+        templates: [{ es: "Son las {a}.", pl: "Jest {b}.", fills: [
+          ["seis", "szósta", "6"], ["siete", "siódma", "7"], ["ocho", "ósma", "8"], ["nueve", "dziewiąta", "9"],
+          ["diez", "dziesiąta", "10"], ["tres de la tarde", "piętnasta", "15"]] }],
+        phrases: [
+          ["¿Qué hora es?", "Która jest godzina?"],
+          ["¿A qué hora?", "O której godzinie?"],
+          ["Hoy", "Dzisiaj."], ["Mañana", "Jutro."], ["Ayer", "Wczoraj."],
+          ["Tengo veinte años", "Mam dwadzieścia lat.", ["Mam 20 lat."]]
+        ]
+      }
+    ]
+  },
+  {
+    id: "trabajo", name: "💼 Trabajo",
+    desc: "Frases para la obra, la fábrica, el almacén, el restaurante o la oficina.",
+    structures: [
+      {
+        id: "oficio", title: "Mi trabajo", pattern: "Pracuję jako ___ · Pracuję w ___",
+        note: "«jako» = como. «w» = en (y el lugar cambia: fabryka → w fabryce). 🔈 «pracuję» = «pratsúie»: la c es «ts».",
+        templates: [
+          { es: "Trabajo como {a}.", pl: "Pracuję jako {b}.", fills: [
+            ["conductor", "kierowca"], ["cocinero", "kucharz"], ["mesero", "kelner"], ["almacenista", "magazynier"],
+            ["soldador", "spawacz"], ["programador", "programista"], ["enfermera", "pielęgniarka"], ["cuidadora", "opiekunka"], ["electricista", "elektryk"]] },
+          { es: "Trabajo en {a}.", pl: "Pracuję w {b}.", fills: [
+            ["una fábrica", "fabryce"], ["un almacén", "magazynie"], ["un restaurante", "restauracji"], ["un hotel", "hotelu"],
+            ["una oficina", "biurze"], ["una tienda", "sklepie"]] }
+        ],
+        phrases: [
+          ["Trabajo en una obra", "Pracuję na budowie."],
+          ["Busco trabajo", "Szukam pracy."]
+        ]
+      },
+      {
+        id: "instrucciones", title: "Entender instrucciones", pattern: "Co mam teraz zrobić?",
+        note: "«Mam» + verbo = «tengo que / debo» en preguntas: Co mam zrobić? = ¿Qué tengo que hacer? 🔈 «zrobić» termina en «ch'» suave: «zróbich'».",
+        phrases: [
+          ["¿Qué tengo que hacer ahora?", "Co mam teraz zrobić?"],
+          ["¿Me lo puede mostrar?", "Czy może mi pan pokazać?", ["Czy może mi pani pokazać?", "Możesz mi pokazać?"]],
+          ["¿Dónde pongo esto?", "Gdzie mam to położyć?"],
+          ["Ya terminé", "Skończyłem.", ["Skończyłam."]],
+          ["Entendido", "Rozumiem."],
+          ["¿Así está bien?", "Czy tak jest dobrze?"],
+          ["Necesito ayuda con esto", "Potrzebuję z tym pomocy."],
+          ["No sé cómo funciona", "Nie wiem, jak to działa."]
+        ]
+      },
+      {
+        id: "musze", title: "Tengo que… (Muszę)", pattern: "Muszę ___.",
+        note: "«Muszę» + infinitivo, igual que «tengo que» + verbo. 🔈 «muszę» = «múshe»: sh dura, y la ę final casi desaparece.",
+        templates: [{ es: "Tengo que {a}.", pl: "Muszę {b}.", fills: [
+          ["ir al médico", "iść do lekarza"], ["salir más temprano", "wyjść wcześniej"], ["llamar a casa", "zadzwonić do domu"],
+          ["descansar un momento", "chwilę odpocząć"], ["preguntarle al jefe", "zapytać szefa"], ["terminar esto", "to skończyć"],
+          ["firmar el contrato", "podpisać umowę"]] }]
+      },
+      {
+        id: "horario", title: "Horarios y turnos", pattern: "Zaczynam pracę o ___ · Kończę o ___",
+        note: "«o» + hora: o siódmej = a las siete. 🔈 «zaczynam» = «zachɨ́nam»: z sonora (zumba) y la «y» oscura.",
+        templates: [
+          { es: "Empiezo a trabajar a las {a}.", pl: "Zaczynam pracę o {b}.", fills: [
+            ["seis", "szóstej", "6"], ["siete", "siódmej", "7"], ["ocho", "ósmej", "8"], ["dos de la tarde", "czternastej", "14"], ["diez de la noche", "dwudziestej drugiej", "22"]] },
+          { es: "Termino a las {a}.", pl: "Kończę o {b}.", fills: [
+            ["dos", "czternastej", "14"], ["tres", "piętnastej", "15"], ["seis de la tarde", "osiemnastej", "18"], ["diez de la noche", "dwudziestej drugiej", "22"]] }
+        ],
+        phrases: [
+          ["¿Trabajo mañana?", "Czy jutro pracuję?"],
+          ["¿Cuántas horas trabajo hoy?", "Ile godzin dzisiaj pracuję?"],
+          ["Tengo el turno de noche", "Mam nocną zmianę."],
+          ["Voy a llegar diez minutos tarde", "Spóźnię się dziesięć minut.", ["Spóźnię się 10 minut."]]
+        ]
+      },
+      {
+        id: "jefe", title: "Con el jefe y los compañeros", pattern: "Mam pytanie · Czy mogę wziąć wolne?",
+        note: "Frases para el día a día con tu equipo. 🔈 «pytanie» = «pɨtáñe»: y oscura + ñ.",
+        phrases: [
+          ["Tengo una pregunta", "Mam pytanie."],
+          ["¿Tienes un momento?", "Masz chwilę?", ["Czy masz chwilę?"]],
+          ["Estoy enfermo, hoy no voy a trabajar", "Jestem chory, dzisiaj nie przyjdę do pracy.", ["Jestem chora, dzisiaj nie przyjdę do pracy."]],
+          ["¿Puedo tomar el viernes libre?", "Czy mogę wziąć wolne w piątek?"],
+          ["¿Cuándo es el día de pago?", "Kiedy jest wypłata?"],
+          ["¿Dónde firmo?", "Gdzie mam podpisać?"],
+          ["Gracias por la ayuda", "Dziękuję za pomoc."],
+          ["¡Buen trabajo!", "Dobra robota!"],
+          ["Hasta mañana", "Do jutra!"]
+        ]
+      },
+      {
+        id: "seguridad", title: "Problemas y seguridad", pattern: "___ nie działa · Uwaga!",
+        note: "Frases cortas que tienes que decir rápido y claro. 🔈 «działa» = «dzh'áua»: dz' suave + ł como u.",
+        templates: [{ es: "{a} no funciona.", pl: "{b} nie działa.", fills: [
+          ["La máquina", "Maszyna"], ["La computadora", "Komputer"], ["La impresora", "Drukarka"], ["El ascensor", "Winda"],
+          ["La luz", "Światło"], ["El montacargas", "Wózek widłowy"]] }],
+        phrases: [
+          ["¡Cuidado!", "Uwaga!"], ["¡Ayuda!", "Pomocy!"],
+          ["Me corté", "Skaleczyłem się.", ["Skaleczyłam się."]],
+          ["¿Dónde está el botiquín?", "Gdzie jest apteczka?"],
+          ["Necesito guantes", "Potrzebuję rękawic."],
+          ["Es peligroso", "To jest niebezpieczne."]
+        ]
+      },
+      {
+        id: "documentos", title: "Oficina y documentos", pattern: "Potrzebuję umowy · Gdzie mam podpisać?",
+        note: "Para recursos humanos, la oficina de extranjeros o el banco. 🔈 «umowa» = «umóva», con v de verdad.",
+        phrases: [
+          ["Necesito un contrato de trabajo", "Potrzebuję umowy o pracę."],
+          ["¿Qué documentos necesito?", "Jakie dokumenty są potrzebne?"],
+          ["Tengo permiso de residencia", "Mam kartę pobytu."],
+          ["Aquí está mi pasaporte", "Oto mój paszport."],
+          ["¿Cuál es el número de cuenta?", "Jaki jest numer konta?"],
+          ["Tengo cita a las diez", "Jestem umówiony na dziesiątą.", ["Jestem umówiona na dziesiątą.", "Jestem umówiony na 10.", "Jestem umówiona na 10."]]
+        ]
+      }
+    ]
+  }
+];
+
+/* --- Sonidos difíciles para hispanohablantes --- */
+const SOUNDS = [
+  { id: "y", letters: "Y", title: "La «i» oscura", tip: "y: di «i» con la lengua más atrás, casi «e». No es «i».",
+    desc: "No existe en español. Di «i», pero con la lengua más atrás y los labios relajados, casi como una «e». Si dices «i» cambias la palabra: być (ser) ≠ bić (golpear). En la pronunciación figurada la escribimos ɨ.",
+    examples: [["ser / estar", "być"], ["nosotros", "my"], ["hijo", "syn"], ["pescado", "ryba"], ["ratón", "mysz"], ["bueno", "dobry"]],
+    pairs: [["być", "bić", "ser", "golpear"], ["my", "mi", "nosotros", "a mí"]] },
+  { id: "w", letters: "W", title: "Siempre «v»", tip: "w = v de verdad: dientes de arriba sobre el labio de abajo, no «b».",
+    desc: "La w polaca es una «v» real: los dientes de arriba tocan el labio de abajo (como en inglés «very»). En español b y v suenan igual; en polaco no: wada (defecto) ≠ bada (examina). Antes de consonante sorda suena «f»: wtorek = «ftórek».",
+    examples: [["agua", "woda"], ["vino", "wino"], ["noche (tarde)", "wieczór"], ["todo", "wszystko"], ["martes", "wtorek"], ["en casa", "w domu"]],
+    pairs: [["wada", "bada", "defecto", "examina"], ["wór", "bór", "saco", "bosque"]] },
+  { id: "l", letters: "Ł", title: "Suena como «u»", tip: "ł = «u» de «huevo». No es una «l».",
+    desc: "La ł se pronuncia como la «u» de «huevo» o la «w» inglesa de «water». No es una «l»: łata (parche) ≠ lata (años).",
+    examples: [["cuchara", "łyżka"], ["bonito", "ładny"], ["silla", "krzesło"], ["mesa", "stół"], ["fue / estuvo", "był"], ["cabeza", "głowa"]],
+    pairs: [["łata", "lata", "parche", "años"]] },
+  { id: "sz", letters: "SZ · CZ", title: "Los sonidos duros", tip: "sz = «sh» con la lengua hacia atrás; cz = «ch» dura. No digas «s».",
+    desc: "SZ es como «sh» en inglés («show»), con la lengua un poco hacia atrás y los labios algo redondeados. CZ es como la «ch» de «chico», pero más dura. DŻ es su versión sonora. Error típico: decir «s» en vez de «sz»: kasa (caja) ≠ kasza (papilla).",
+    examples: [["perdón", "przepraszam"], ["escuela", "szkoła"], ["siempre", "zawsze"], ["tiempo", "czas"], ["hombre (persona)", "człowiek"], ["negro", "czarny"]],
+    pairs: [["kasa", "kasza", "caja", "papilla"], ["sok", "szok", "jugo", "choque"]] },
+  { id: "rz", letters: "RZ · Ż", title: "La «ll» argentina", tip: "rz/ż = «ll» de Buenos Aires («yo», «lluvia»). No es una «r».",
+    desc: "rz y ż suenan igual: como la «ll» o la «y» de Buenos Aires en «yo» o «lluvia», con vibración en la garganta. Después de p, t, k, ch, la rz se pronuncia sin voz, como sz: przepraszam = «psheprásham», trzy = «tshɨ». ¡No es una «r»!",
+    examples: [["río", "rzeka"], ["mar", "morze"], ["esposa", "żona"], ["vida", "życie"], ["amarillo", "żółty"], ["puede ser", "może"]],
+    pairs: [] },
+  { id: "soft", letters: "Ś · Ć · Ź · DŹ", title: "Los suaves", tip: "ś ć ź dź (y si, ci, zi, dzi): punta de la lengua abajo, centro de la lengua contra el paladar, como sonriendo.",
+    desc: "Las letras con tilde y las combinaciones si, ci, zi, dzi son «suaves»: punta de la lengua abajo, detrás de los dientes, y el centro de la lengua contra el paladar, como sonriendo. ś ≈ «sh» muy suave · ć ≈ «ch» muy suave · ź ≈ «ll» argentina suave · dź ≈ «y» de «yo» enfático. En la pronunciación figurada llevan apóstrofo: sh', ch', zh', dzh'.",
+    examples: [["hola", "cześć"], ["hoy", "dzisiaj"], ["gracias", "dziękuję"], ["algo", "coś"], ["tía", "ciocia"], ["día", "dzień"]],
+    pairs: [["kasza", "Kasia", "papilla", "Kasia (nombre)"], ["czy", "ci", "¿acaso…? (pregunta)", "a ti"]] },
+  { id: "z", letters: "Z · DZ", title: "La «s» que zumba", tip: "z: «s» con voz, que zumba como una abeja (zzz). En Latinoamérica sale «s»: ¡cuidado!",
+    desc: "En Latinoamérica la «z» se lee como «s», pero en polaco la z es sonora: zumba como una abeja (zzzz) con las cuerdas vocales vibrando. koza (cabra) ≠ kosa (guadaña). Al final de palabra sí suena como s: raz = «ras».",
+    examples: [["sopa", "zupa"], ["cero", "zero"], ["castillo", "zamek"], ["entiendo", "rozumiem"], ["compras", "zakupy"], ["campana", "dzwon"]],
+    pairs: [["koza", "kosa", "cabra", "guadaña"], ["kozy", "kosy", "cabras", "guadañas"]] },
+  { id: "h", letters: "H · CH", title: "La «j» de jamón", tip: "h y ch = «j» suave, como en el Caribe o Colombia.",
+    desc: "h y ch suenan igual: como la «j» de «jamón», pero más suave (como la pronuncian en el Caribe o en Colombia). ¡Por fin uno fácil!",
+    examples: [["pan", "chleb"], ["té", "herbata"], ["quiero", "chcę"], ["un momento", "chwila"], ["enfermo", "chory"], ["hotel", "hotel"]],
+    pairs: [] },
+  { id: "nasal", letters: "Ą · Ę", title: "Vocales nasales", tip: "ą ≈ «on», ę ≈ «en» sin cerrar la n. La ę final casi desaparece: proszę = «próshe».",
+    desc: "ą ≈ «on» y ę ≈ «en», pero sin cerrar del todo la n: el aire sale por la nariz. Al final de palabra la ę casi desaparece: proszę = «próshe», się = «sh'e». Antes de p y b suenan «om» / «em»: ząb = «zomp».",
+    examples: [["gracias", "dziękuję"], ["mano", "ręka"], ["diente / muela", "ząb"], ["por favor", "proszę"], ["esposo", "mąż"], ["voy (a pie)", "idę"]],
+    pairs: [["kąt", "kot", "rincón", "gato"], ["mąka", "męka", "harina", "tormento"]] },
+  { id: "clust", letters: "STR · PRZ", title: "Grupos de consonantes", tip: "No metas vocales de apoyo («e-szkoła»). Despacio, sonido por sonido, y luego acelera.",
+    desc: "El polaco junta muchas consonantes seguidas. Truco: no agregues vocales de apoyo («e-scuela» → szkoła, sin «e»). Practica despacio, sonido por sonido, y luego acelera: w-sz-y-st-ko → wszystko.",
+    examples: [["todo", "wszystko"], ["martes", "wtorek"], ["pájaro", "ptak"], ["árbol", "drzewo"], ["tres", "trzy"], ["escarabajo", "chrząszcz"]],
+    pairs: [] },
+  { id: "stress", letters: "´", title: "El acento: penúltima sílaba", tip: "El acento va en la penúltima sílaba, como en «casa».", info: true,
+    desc: "En polaco el acento cae casi siempre en la penúltima sílaba, como en las palabras graves del español (casa, árbol). En la pronunciación figurada marcamos la sílaba tónica con tilde: przepraszam = «psheprásham», rozumiem = «rozúmiem».",
+    examples: [["perdón", "przepraszam"], ["entiendo", "rozumiem"], ["tomate", "pomidor"], ["Polonia", "Polska"], ["profesor", "nauczyciel"], ["computadora", "komputer"]],
+    pairs: [] }
+];
+const SOUND_BY_ID = {};
+SOUNDS.forEach((s) => { SOUND_BY_ID[s.id] = s; });
+
+const TWISTERS = [
+  ["El escarabajo zumba entre los juncos en Szczebrzeszyn", "W Szczebrzeszynie chrząszcz brzmi w trzcinie."],
+  ["Sasha caminaba por la carretera seca", "Szedł Sasza suchą szosą."],
+  ["¿Papá lee citas de Tácito?", "Czy tata czyta cytaty Tacyta?"],
+  ["Mesa con las patas rotas", "Stół z powyłamywanymi nogami."],
+  ["El rey Carlos le compró a la reina Carolina collares color coral", "Król Karol kupił królowej Karolinie korale koloru koralowego."]
+];
+
+const LEGEND = [
+  ["sh", "como «sh» en inglés («show»)", "szkoła"],
+  ["ch", "como en «chico», pero más dura", "czas"],
+  ["zh", "como la «ll» de Buenos Aires («yo»)", "żona"],
+  ["sh' ch' zh' dzh'", "suaves: lengua contra el paladar, sonriendo", "cześć"],
+  ["j", "como en «jamón», suave", "chleb"],
+  ["v", "v real: dientes sobre el labio (no «b»)", "woda"],
+  ["z", "«s» que zumba como abeja", "zupa"],
+  ["ts", "como en «tsunami»", "noc"],
+  ["u (ł)", "como en «huevo»", "ładny"],
+  ["ɨ", "«i» oscura, entre «i» y «e»", "być"],
+  ["on · en", "vocales nasales (aire por la nariz)", "dziękuję"],
+  ["á é í ó ú", "sílaba tónica (casi siempre la penúltima)", "przepraszam"]
+];
+
+const MODE_DESC = {
+  repeat: "Escuchas la frase en polaco y la repites. Ideal para empezar: imitas la pronunciación del nativo.",
+  translate: "Ves la frase en español y la dices en polaco. Así automatizas los patrones hasta que salen solos.",
+  listen: "Escuchas la frase (sin texto) y eliges qué significa. Entrena el oído."
+};
+
+/* =========================================================================
+   UTILIDADES
+   ========================================================================= */
+const $ = (id) => document.getElementById(id);
+const DAY = 86400000;
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function lsJSON(k, def) { try { const v = lsGet(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
+function startOfDay(t) { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+function dayKey(t) { const d = new Date(t); return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate(); }
+function pctColor(p) { return p >= 80 ? "var(--good)" : p >= 55 ? "var(--warn)" : "var(--bad)"; }
+
+let toastTimer = null;
+function toast(text, ms) {
+  let t = $("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; t.setAttribute("role", "status"); document.body.appendChild(t); }
+  t.textContent = text; t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, ms || 6000);
+}
+
+/* =========================================================================
+   PRONUNCIACIÓN FIGURADA (ortografía polaca → lectura para hispanohablantes)
+   ========================================================================= */
+const PL_VOWELS = "aeiouyóąę";
+const isPlVowel = (c) => !!c && PL_VOWELS.indexOf(c) !== -1;
+const DEVOICE = { b: "p", d: "t", g: "k", v: "f", z: "s", zh: "sh", "zh'": "sh'", dz: "ts", dzh: "ch", "dzh'": "ch'" };
+const VOICE = {}; Object.keys(DEVOICE).forEach((k) => { VOICE[DEVOICE[k]] = k; });
+const OBSTR = new Set(["b", "p", "d", "t", "g", "k", "v", "f", "z", "s", "zh", "sh", "zh'", "sh'", "dz", "ts", "dzh", "ch", "dzh'", "ch'", "j"]);
+const VOICELESS = new Set(["p", "t", "k", "f", "s", "sh", "sh'", "ts", "ch", "ch'", "j"]);
+const ACUTE = { a: "á", e: "é", i: "í", o: "ó", u: "ú", "ɨ": "ɨ́" };
+const PH_OVERRIDE = { chile: "chíle", peru: "péru", ok: "okéi", "szedł": "shet" };
+const SINGLE = {
+  "ż": ["zh", "rz"], "ź": ["zh'", "soft"], "ś": ["sh'", "soft"], "ć": ["ch'", "soft"], "ń": ["ñ", null],
+  "w": ["v", "w"], "h": ["j", "h"], "c": ["ts", null], "z": ["z", "z"], "s": ["s", null],
+  "b": ["b"], "p": ["p"], "d": ["d"], "t": ["t"], "g": ["g"], "k": ["k"], "f": ["f"],
+  "m": ["m"], "n": ["n"], "l": ["l"], "r": ["r"], "x": ["ks"], "v": ["v"], "q": ["k"]
+};
+
+// Divide una palabra (minúsculas) en unidades de sonido.
+function plUnits(w) {
+  const u = [];
+  const add = (t, src, extra) => u.push(Object.assign({ t, src, v: false, cat: null }, extra || {}));
+  let i = 0;
+  while (i < w.length) {
+    const c = w[i];
+    const r2 = w.substr(i, 2), r3 = w.substr(i, 3);
+    // consonantes suaves con «i»: dzi, ci, si, zi, ni
+    let soft = null;
+    if (r3 === "dzi") soft = ["dzh'", 3, "soft"];
+    else if (r2 === "ci") soft = ["ch'", 2, "soft"];
+    else if (r2 === "si") soft = ["sh'", 2, "soft"];
+    else if (r2 === "zi") soft = ["zh'", 2, "soft"];
+    else if (r2 === "ni") soft = ["ñ", 2, null];
+    if (soft) {
+      const after = w[i + soft[1]];
+      add(soft[0], w.substr(i, soft[1]), { cat: soft[2] });
+      // si sigue vocal, la «i» solo ablanda; si no, la «i» es vocal y se procesa aparte
+      i += (isPlVowel(after) && after !== "i") ? soft[1] : soft[1] - 1;
+      continue;
+    }
+    if (r2 === "dż") { add("dzh", r2, { cat: "sz" }); i += 2; continue; }
+    if (r2 === "dź") { add("dzh'", r2, { cat: "soft" }); i += 2; continue; }
+    if (r2 === "dz") { add("dz", r2, { cat: "z" }); i += 2; continue; }
+    if (r2 === "ch") { add("j", r2, { cat: "h" }); i += 2; continue; }
+    if (r2 === "cz") { add("ch", r2, { cat: "sz" }); i += 2; continue; }
+    if (r2 === "sz") { add("sh", r2, { cat: "sz" }); i += 2; continue; }
+    if (r2 === "rz") { add("zh", r2, { cat: "rz", rz: true }); i += 2; continue; }
+    if (c === "a" || c === "e" || c === "o") { add(c, c, { v: true }); i++; continue; }
+    if (c === "u" || c === "ó") { add("u", c, { v: true }); i++; continue; }
+    if (c === "y") { add("ɨ", c, { v: true, cat: "y" }); i++; continue; }
+    if (c === "ą") { add("on", c, { v: true, nasal: "o", cat: "nasal" }); i++; continue; }
+    if (c === "ę") { add("en", c, { v: true, nasal: "e", cat: "nasal" }); i++; continue; }
+    if (c === "i") {
+      const prev = u[u.length - 1];
+      const glide = prev && !prev.v && isPlVowel(w[i + 1]);
+      add("i", c, { v: !glide, glide }); i++; continue;
+    }
+    if (c === "j") { add("i", c, { glide: true }); i++; continue; }
+    if (c === "ł") { add("u", c, { glide: true, cat: "l" }); i++; continue; }
+    const s = SINGLE[c];
+    if (s) { add(s[0], c, { cat: s[1] || null }); i++; continue; }
+    add(c, c); i++;   // otro carácter: se deja tal cual
+  }
+  return u;
+}
+
+// Asimilaciones, nasales, «gu» y acento. Devuelve el texto.
+function plProcess(u) {
+  // vocales nasales
+  u.forEach((x, k) => {
+    if (!x.nasal) return;
+    const nx = u[k + 1];
+    if (!nx) x.t = x.nasal === "e" ? "e" : "on";
+    else if (nx.t === "p" || nx.t === "b") x.t = x.nasal + "m";
+    else if (nx.src === "l" || nx.src === "ł") x.t = x.nasal;
+    else x.t = x.nasal + "n";
+  });
+  // ensordecimiento final
+  for (let k = u.length - 1; k >= 0 && OBSTR.has(u[k].t); k--) if (DEVOICE[u[k].t]) u[k].t = DEVOICE[u[k].t];
+  // w / rz después de consonante sorda → sordas (przy = pshɨ, twój = tfui)
+  for (let k = 1; k < u.length; k++) {
+    if ((u[k].src === "w" || u[k].rz) && VOICELESS.has(u[k - 1].t) && DEVOICE[u[k].t]) u[k].t = DEVOICE[u[k].t];
+  }
+  // asimilación regresiva (wtorek = ftórek, prośba = proźba)
+  for (let k = u.length - 2; k >= 0; k--) {
+    const a = u[k], b = u[k + 1];
+    if (!OBSTR.has(a.t) || !OBSTR.has(b.t)) continue;
+    if (VOICELESS.has(b.t)) { if (DEVOICE[a.t]) a.t = DEVOICE[a.t]; }
+    else if (!(b.src === "w" || b.rz) && VOICE[a.t]) a.t = VOICE[a.t];
+  }
+  // «g» antes de e/i → «gu» para que se lea como en «guerra»
+  u.forEach((x, k) => { if (x.t === "g" && u[k + 1] && /^[eiɨ]/.test(u[k + 1].t)) x.t = "gu"; });
+  // acento en la penúltima sílaba
+  const nuc = [];
+  u.forEach((x, k) => { if (x.v) nuc.push(k); });
+  if (nuc.length >= 2) {
+    const x = u[nuc[nuc.length - 2]];
+    for (let j = 0; j < x.t.length; j++) if (ACUTE[x.t[j]]) { x.t = x.t.slice(0, j) + ACUTE[x.t[j]] + x.t.slice(j + 1); break; }
+  }
+  return u.map((x) => x.t).join("");
+}
+
+const TOKEN_RE = /^([^0-9A-Za-zÀ-ž]*)(.*?)([^0-9A-Za-zÀ-ž]*)$/;
+function phon(text) {
+  const toks = String(text).split(/\s+/).filter(Boolean);
+  const out = [];
+  for (let i = 0; i < toks.length; i++) {
+    const m = toks[i].match(TOKEN_RE);
+    const lw = m[2].toLowerCase();
+    if (!lw || /\d/.test(lw)) { out.push(toks[i]); continue; }
+    if (PH_OVERRIDE[lw]) { out.push(m[1] + PH_OVERRIDE[lw] + m[3]); continue; }
+    // las preposiciones «w» y «z» se pronuncian junto con la palabra siguiente
+    if ((lw === "w" || lw === "z") && i + 1 < toks.length) {
+      const m2 = toks[i + 1].match(TOKEN_RE);
+      const lw2 = m2[2].toLowerCase();
+      if (lw2 && !/\d/.test(lw2) && !PH_OVERRIDE[lw2]) {
+        const u = plUnits(lw + lw2);
+        plProcess(u);
+        out.push(m[1] + u[0].t + " " + m2[1] + u.slice(1).map((x) => x.t).join("") + m2[3]);
+        i++; continue;
+      }
+    }
+    out.push(m[1] + plProcess(plUnits(lw)) + m[3]);
+  }
+  return out.join(" ");
+}
+
+// Sonidos difíciles que contiene una palabra (para estadísticas y consejos).
+function soundCats(word) {
+  const lw = String(word).toLowerCase().replace(/[^a-ząćęłńóśźż]/g, "");
+  if (!lw) return [];
+  const u = plUnits(lw);
+  const cats = new Set();
+  u.forEach((x) => { if (x.cat) cats.add(x.cat); });
+  const isCons = (x) => x && !x.v && !x.glide;
+  let run = 0;
+  u.forEach((x) => { run = isCons(x) ? run + 1 : 0; if (run >= 3) cats.add("clust"); });
+  if (isCons(u[0]) && isCons(u[1]) && u[1].t !== "r" && u[1].t !== "l") cats.add("clust");
+  return Array.from(cats);
+}
+
+/* =========================================================================
+   ESTADO PERSISTENTE
+   ========================================================================= */
+const K = { settings: "pol_settings_v1", prefs: "pol_prefs_v1", stats: "pol_stats_v1", sounds: "pol_sounds_v1", srs: "pol_srs_v1", log: "pol_log_v1", theme: "pol_theme" };
+const IS_MOBILE = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const settings = Object.assign({ rate: 0.9, phon: true, record: !IS_MOBILE, autoplay: true }, lsJSON(K.settings, {}));
+const prefs = Object.assign({ len: 20, mode: "repeat", level: "base", soundTab: "guide" }, lsJSON(K.prefs, {}));
+let stats = lsJSON(K.stats, {});        // structId → {c, n, last}
+let soundStats = lsJSON(K.sounds, {});  // categoría → {c, n}
+let srs = lsJSON(K.srs, {});            // clave → {box, due, reps, lapses, d}
+let sessionLog = lsJSON(K.log, []);     // [{t, title, c, n}]
+const saveSettings = () => lsSet(K.settings, JSON.stringify(settings));
+const savePrefs = () => lsSet(K.prefs, JSON.stringify(prefs));
+const saveStats = () => lsSet(K.stats, JSON.stringify(stats));
+const saveSounds = () => lsSet(K.sounds, JSON.stringify(soundStats));
+const saveSrs = () => lsSet(K.srs, JSON.stringify(srs));
+const saveLog = () => lsSet(K.log, JSON.stringify(sessionLog.slice(-200)));
+
+// Repetición espaciada: lo que fallas vuelve mañana; si aciertas, cada vez más tarde.
+const SRS_DAYS = [1, 2, 4, 8, 16, 32];
+function srsRecord(d, ok) {
+  if (!d.structId || d.noSrs) return;
+  const key = "p:" + normPl(d.pl);
+  let rec = srs[key];
+  if (!rec && ok) return;
+  if (!rec) rec = srs[key] = { box: 0, reps: 0, lapses: 0 };
+  rec.d = { es: d.es, pl: d.pl, alts: d.alts || [], structId: d.structId };
+  rec.reps++;
+  if (ok) rec.box = Math.min(rec.box + 1, SRS_DAYS.length - 1);
+  else { rec.box = 0; rec.lapses++; }
+  rec.due = startOfDay(Date.now()) + SRS_DAYS[rec.box] * DAY;
+  if (ok && rec.box === SRS_DAYS.length - 1) delete srs[key];   // ya dominada
+  saveSrs();
+}
+function srsDue() {
+  const end = startOfDay(Date.now()) + DAY - 1;
+  return Object.values(srs).filter((r) => r.d && r.due <= end);
+}
+function streak() {
+  const days = new Set(sessionLog.map((e) => dayKey(e.t)));
+  let s = 0, t = Date.now();
+  if (!days.has(dayKey(t))) t -= DAY;
+  while (days.has(dayKey(t))) { s++; t -= DAY; }
+  return s;
+}
+
+/* =========================================================================
+   FRASES
+   ========================================================================= */
+function buildDrills(st) {
+  const out = [];
+  (st.phrases || []).forEach((p) => out.push({ es: p[0], pl: p[1], alts: p[2] || [], structId: st.id }));
+  (st.templates || []).forEach((t) => t.fills.forEach((f) => {
+    const alts = (t.alt || []).map((a) => a.replace("{b}", f[1]));
+    if (f[2]) { alts.push(t.pl.replace("{b}", f[2])); (t.alt || []).forEach((a) => alts.push(a.replace("{b}", f[2]))); }
+    out.push({ es: t.es.replace("{a}", f[0]), pl: t.pl.replace("{b}", f[1]), alts, structId: st.id });
+  }));
+  return out;
+}
+function findStruct(id) {
+  for (const lv of LEVELS) for (const st of lv.structures) if (st.id === id) return { level: lv, st };
+  return null;
+}
+let ALL_DRILLS = null;
+function allDrills() {
+  if (!ALL_DRILLS) ALL_DRILLS = [].concat(...LEVELS.map((lv) => [].concat(...lv.structures.map(buildDrills))));
+  return ALL_DRILLS;
+}
+function buildQueue(drills, length) {
+  const q = [];
+  while (q.length < length) {
+    const round = shuffle(drills);
+    if (q.length && round.length > 1 && round[0].pl === q[q.length - 1].pl) round.push(round.shift());
+    q.push(...round);
+  }
+  return q.slice(0, length);
+}
+
+/* =========================================================================
+   COMPARACIÓN DE LO QUE DIJISTE CON LA FRASE
+   ========================================================================= */
+function normPl(s) {
+  return String(s).toLowerCase().replace(/[.,!?¿¡;:"„”“«»…()\[\]–—\-]/g, " ").replace(/\s+/g, " ").trim();
+}
+function lev(a, b) {
+  if (a === b) return 0;
+  const m = a.length, n = b.length;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+function sim(a, b) { return 1 - lev(a, b) / Math.max(a.length, b.length, 1); }
+
+// Alinea las palabras de la frase con lo que reconoció el navegador.
+function alignWords(target, heard) {
+  const words = target.split(/\s+/).filter(Boolean).map((disp) => ({ disp, w: normPl(disp) })).filter((x) => x.w);
+  const hw = normPl(heard).split(" ").filter(Boolean);
+  const n = words.length, m = hw.length;
+  const S = (i, j) => { const s = sim(words[i].w, hw[j]); return s >= 0.5 ? s : -1; };
+  const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) {
+    const s = S(i - 1, j - 1);
+    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1], s > 0 ? dp[i - 1][j - 1] + s : -Infinity);
+  }
+  let i = n, j = m;
+  const match = new Array(n).fill(null);
+  while (i > 0 && j > 0) {
+    const s = S(i - 1, j - 1);
+    if (s > 0 && Math.abs(dp[i][j] - (dp[i - 1][j - 1] + s)) < 1e-9) { match[i - 1] = { h: hw[j - 1], s }; i--; j--; }
+    else if (dp[i][j] === dp[i - 1][j]) i--;
+    else j--;
+  }
+  let pts = 0, miss = 0;
+  words.forEach((x, k) => {
+    const mm = match[k];
+    x.heard = mm ? mm.h : null;
+    x.status = !mm ? "miss" : mm.s === 1 ? "ok" : mm.s >= 0.6 ? "close" : "miss";
+    if (x.status === "ok") pts += 1; else if (x.status === "close") pts += 0.5; else miss++;
+  });
+  const score = n ? pts / n : 0;
+  return { words, score, pass: miss === 0 && score >= 0.8 };
+}
+function scoreAttempt(d, heardList) {
+  const targets = [d.pl].concat(d.alts || []);
+  let best = null;
+  heardList.forEach((h) => targets.forEach((t, ti) => {
+    const r = alignWords(t, h);
+    r.heard = h; r.target = t; r.ti = ti;
+    if (!best || r.score > best.score + 1e-9 || (Math.abs(r.score - best.score) < 1e-9 && ti === 0 && best.ti !== 0)) best = r;
+  }));
+  return best;
+}
+
+/* =========================================================================
+   VOZ (síntesis) — se prefieren voces polacas instaladas en el dispositivo
+   ========================================================================= */
+let ttsVoices = [];
+function refreshVoices() { if (window.speechSynthesis) ttsVoices = window.speechSynthesis.getVoices() || []; }
+if (window.speechSynthesis) {
+  refreshVoices();
+  try { window.speechSynthesis.addEventListener("voiceschanged", refreshVoices); } catch (e) {}
+}
+function pickPolishVoice() {
+  const vs = ttsVoices.length ? ttsVoices : (window.speechSynthesis ? window.speechSynthesis.getVoices() : []);
+  const all = vs.filter((v) => /^pl([-_]|$)/i.test(v.lang));
+  if (!all.length) return null;
+  const local = all.filter((v) => v.localService);
+  const pool = local.length ? local : all;
+  for (const name of ["Zosia", "Krzysztof", "Ewa", "Paulina", "Marek", "Agnieszka", "Google polski"]) {
+    const m = pool.find((v) => v.name.indexOf(name) !== -1);
+    if (m) return m;
+  }
+  return pool[0];
+}
+let noVoiceWarned = false;
+let ttsCurrent = null;
+function speak(text, opts) {
+  opts = opts || {};
+  const synth = window.speechSynthesis;
+  if (!text) return;
+  if (!synth || typeof SpeechSynthesisUtterance === "undefined") { toast("🔇 Este navegador no puede leer en voz alta. Prueba con Chrome, Edge o Safari."); return; }
+  try {
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const voice = pickPolishVoice();
+    if (voice) { u.voice = voice; u.lang = voice.lang; }
+    else {
+      u.lang = "pl-PL";
+      if (!noVoiceWarned && ttsVoices.length) {
+        noVoiceWarned = true;
+        toast("No encontré una voz polaca en tu dispositivo. Mac: Ajustes → Accesibilidad → Contenido leído → Voz del sistema → Gestionar voces → Polaco (Zosia). Windows: Configuración → Hora e idioma → Voz → Agregar voces → Polski.", 12000);
+      }
+    }
+    u.rate = opts.slow ? 0.6 : settings.rate;
+    const btn = opts.btn ? $(opts.btn) : null;
+    u.onstart = () => { if (btn) btn.classList.add("speaking"); };
+    u.onend = () => { if (btn) btn.classList.remove("speaking"); };
+    u.onerror = (e) => {
+      if (btn) btn.classList.remove("speaking");
+      if (e && e.error && e.error !== "interrupted" && e.error !== "canceled") toast("🔇 No se pudo reproducir el audio. Revisa el volumen y que tengas una voz polaca instalada.");
+    };
+    ttsCurrent = u;
+    synth.speak(u);
+  } catch (e) { toast("🔇 No se pudo reproducir el audio."); }
+}
+
+/* =========================================================================
+   MICRÓFONO: reconocimiento de voz (pl-PL) + grabación de tu voz
+   ========================================================================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const MIC_BLOCKED = "No tengo acceso al micrófono. Permítelo en el navegador (icono del candado junto a la dirección) y toca 🎤 otra vez.";
+let listening = false;
+let recorder = null, recStream = null, recChunks = [], myVoiceUrl = null;
+
+function startRecorder(stream) {
+  recStream = stream;
+  try {
+    recChunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
+    recorder.onstop = () => {
+      if (recChunks.length) {
+        if (myVoiceUrl) URL.revokeObjectURL(myVoiceUrl);
+        myVoiceUrl = URL.createObjectURL(new Blob(recChunks, { type: recorder.mimeType || "audio/webm" }));
+        const b = $("myVoiceBtn"); if (b) b.disabled = false;
+      }
+      stopStream();
+    };
+    recorder.start();
+  } catch (e) { recorder = null; stopStream(); }
+}
+function stopStream() { if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; } }
+function stopRecorder() {
+  if (recorder && recorder.state !== "inactive") { try { recorder.stop(); } catch (e) { stopStream(); } }
+  else stopStream();
+  recorder = null;
+}
+function playMyVoice() { if (myVoiceUrl) { try { new Audio(myVoiceUrl).play(); } catch (e) {} } }
+
+function setStatus(text, cls) {
+  const el = $("speakStatus");
+  if (el) { el.textContent = text; el.className = "speak-status" + (cls ? " " + cls : ""); }
+}
+
+async function startSpeech() {
+  if (!SR || listening) return;
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  const mic = $("micBtn");
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    setStatus("Pidiendo acceso al micrófono…", "live");
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (e) { setStatus(MIC_BLOCKED, "err"); return; }
+    if (settings.record && window.MediaRecorder) startRecorder(stream);
+    else stream.getTracks().forEach((t) => t.stop());
+  }
+  const rec = new SR();
+  rec.lang = "pl-PL";
+  rec.interimResults = false;
+  rec.continuous = false;
+  rec.maxAlternatives = 5;
+  listening = true;
+  if (mic) mic.classList.add("listening");
+  setStatus("Te escucho… habla ahora 🇵🇱", "live");
+  let got = false;
+  rec.onresult = (e) => {
+    got = true;
+    const alts = Array.from(e.results[0]).map((r) => r.transcript);
+    stopRecorder();
+    onHeard(alts);
+  };
+  rec.onerror = (e) => {
+    listening = false;
+    const m = $("micBtn"); if (m) m.classList.remove("listening");
+    stopRecorder();
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") setStatus(MIC_BLOCKED, "err");
+    else if (e.error === "no-speech") setStatus("No escuché nada. Toca 🎤 y habla un poco más fuerte.", "err");
+    else if (e.error === "audio-capture" && settings.record) {
+      settings.record = false; saveSettings();
+      setStatus("Tu dispositivo no permite grabar y reconocer a la vez. Desactivé «grabar mi voz». Toca 🎤 otra vez.", "err");
+    } else if (e.error === "network") setStatus("El reconocimiento de voz necesita internet. Revisa la conexión y toca 🎤.", "err");
+    else setStatus("No funcionó el reconocimiento (" + e.error + "). Toca 🎤 otra vez.", "err");
+  };
+  rec.onend = () => {
+    listening = false;
+    const m = $("micBtn"); if (m) m.classList.remove("listening");
+    stopRecorder();
+    if (!got && $("speakStatus") && $("speakStatus").classList.contains("live")) setStatus("Toca 🎤 y vuelve a intentarlo", "");
+  };
+  try { rec.start(); }
+  catch (e) { listening = false; if (mic) mic.classList.remove("listening"); stopRecorder(); setStatus("No se pudo iniciar el micrófono. Inténtalo otra vez.", "err"); }
+}
+
+/* =========================================================================
+   NAVEGACIÓN
+   ========================================================================= */
+let currentSection = "phrases";
+function switchView(name) {
+  document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + name));
+  window.scrollTo(0, 0);
+}
+function showSection(sec) {
+  currentSection = sec;
+  document.querySelectorAll(".section-btn").forEach((b) => b.classList.toggle("active", b.dataset.section === sec));
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (sec === "phrases") { renderPhrasesHome(); switchView("phrases"); }
+  else if (sec === "sounds") { renderSounds(); switchView("sounds"); }
+  else { renderProgress(); switchView("progress"); }
+}
+
+/* =========================================================================
+   FRASES: INICIO
+   ========================================================================= */
+function renderPhrasesHome() {
+  document.querySelectorAll(".len-btn").forEach((b) => b.classList.toggle("active", Number(b.dataset.len) === prefs.len));
+  document.querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.mode === prefs.mode));
+  $("modeDesc").textContent = MODE_DESC[prefs.mode];
+
+  const due = srsDue();
+  $("reviewBox").innerHTML = due.length ? `
+    <div class="review-box">
+      <div><b>🧠 Repaso de hoy: ${due.length} ${due.length === 1 ? "frase" : "frases"}</b>
+      <span>Frases que te costaron. Repasarlas a tiempo es lo que las fija en la memoria.</span></div>
+      <button class="btn btn-primary" id="reviewBtn" type="button">Repasar</button>
+    </div>` : "";
+  if (due.length) $("reviewBtn").addEventListener("click", startReview);
+
+  $("levelTabs").innerHTML = LEVELS.map((lv) =>
+    `<button class="level-tab${lv.id === prefs.level ? " active" : ""}" data-level="${lv.id}" type="button">${esc(lv.name)}</button>`).join("");
+  const lv = LEVELS.find((l) => l.id === prefs.level) || LEVELS[0];
+  $("levelDesc").textContent = lv.desc;
+  $("structGrid").innerHTML = lv.structures.map((st) => {
+    const s = stats[st.id];
+    const pct = s && s.n ? Math.round((s.c / s.n) * 100) : null;
+    const count = buildDrills(st).length;
+    return `<button class="tile" data-struct="${st.id}" type="button">
+      <div class="tile-top"><span class="tile-title">${esc(st.title)}</span><span class="tile-pct">${pct == null ? "nuevo" : pct + "%"}</span></div>
+      <div class="tile-pattern">${esc(st.pattern)}</div>
+      <div class="tile-bar"><div style="width:${pct || 0}%;background:${pct == null ? "transparent" : pctColor(pct)}"></div></div>
+      <div class="tile-meta">${count} frases${s && s.n ? " · " + s.n + " repeticiones" : ""}</div>
+    </button>`;
+  }).join("");
+}
+
+/* =========================================================================
+   SESIÓN DE EJERCICIOS
+   ========================================================================= */
+let session = null;
+let checked = false;
+let lastStart = null;   // para «Repetir otra vez»
+
+function newSession(f) {
+  return Object.assign({ idx: 0, correct: 0, answered: 0, mistakes: [], soundMiss: {}, from: "phrases", mode: prefs.mode }, f);
+}
+function startStructure(id) {
+  const found = findStruct(id);
+  if (!found) return;
+  const drills = buildDrills(found.st);
+  lastStart = () => startStructure(id);
+  session = newSession({
+    title: found.st.title, badge: found.level.name.split(" ")[0], pattern: found.st.pattern, note: found.st.note,
+    queue: buildQueue(drills, prefs.len), pool: drills, structId: id
+  });
+  beginSession();
+}
+function startReview() {
+  const due = shuffle(srsDue()).slice(0, 25).map((r) => Object.assign({}, r.d));
+  if (!due.length) return;
+  lastStart = null;
+  session = newSession({ title: "Repaso de hoy", badge: "🧠", pattern: "", note: "Frases que te costaron en días anteriores.", queue: due, pool: allDrills() });
+  beginSession();
+}
+// Práctica de palabras de un sonido o de trabalenguas (siempre «escucha y repite»).
+function startCustom(kind, id) {
+  let drills, title, pattern, note, badge;
+  if (kind === "sound") {
+    const s = SOUND_BY_ID[id];
+    drills = s.examples.concat(s.pairs.map((p) => [p[2], p[0]]), s.pairs.map((p) => [p[3], p[1]]))
+      .map((e) => ({ es: e[0], pl: e[1], alts: [], noSrs: true }));
+    title = s.letters + " — " + s.title; pattern = ""; note = s.tip; badge = "🔤";
+  } else {
+    drills = TWISTERS.map((t) => ({ es: t[0], pl: t[1], alts: [], noSrs: true }));
+    title = "Trabalenguas"; pattern = ""; note = "Primero despacio (🐢), después a velocidad normal."; badge = "👅";
+  }
+  lastStart = () => startCustom(kind, id);
+  session = newSession({ title, badge, pattern, note, queue: buildQueue(drills, Math.min(Math.max(drills.length, 10), 16)), pool: drills, from: "sounds", mode: "repeat" });
+  beginSession();
+}
+function beginSession() {
+  $("drillBadge").textContent = session.badge;
+  $("drillTitle").textContent = session.title;
+  $("drillPattern").textContent = session.pattern || "";
+  $("drillNote").textContent = session.note || "";
+  switchView("drill");
+  renderDrill();
+}
+function currentDrill() { return session ? session.queue[session.idx] : null; }
+
+function wordsHtml(text, classes) {
+  return text.split(/\s+/).filter(Boolean).map((w, k) =>
+    `<span class="word${classes && classes[k] ? " " + classes[k] : ""}" data-say="${esc(w.replace(/[.,!?¿¡]/g, ""))}">${esc(w)}</span>`).join(" ");
+}
+function phonHtml(pl) { return settings.phon ? `<div class="phon">${esc(phon(pl))}</div>` : ""; }
+
+function renderDrill() {
+  checked = false;
+  const s = session, d = currentDrill();
+  if (!d) { finishSession(); return; }
+  const total = s.queue.length;
+  $("drillFill").style.width = ((s.idx / total) * 100) + "%";
+  $("drillCounter").textContent = (s.idx + 1) + " / " + total;
+  $("drillScore").textContent = s.answered ? `${s.correct}/${s.answered} bien` : "—";
+  const card = $("drillCard");
+  const audioRow = `<div class="audio-row">
+      <button class="btn" id="playBtn" type="button">🔊 Escuchar</button>
+      <button class="btn" id="slowBtn" type="button">🐢 Despacio</button>
+    </div>`;
+
+  if (s.mode === "repeat") {
+    card.innerHTML = `
+      <div class="prompt-label">Escucha y repite</div>
+      <div class="pl-big" id="plText">${wordsHtml(d.pl)}</div>
+      ${phonHtml(d.pl)}
+      <div class="es-small">${esc(d.es)}</div>
+      ${audioRow}
+      <div id="answerArea"></div>
+      <div class="feedback" id="feedback"></div>`;
+    bindAudio(d);
+    renderMic("Toca 🎤 y repite la frase en voz alta", "Saltar");
+    if (settings.autoplay) setTimeout(() => speak(d.pl, { btn: "playBtn" }), 250);
+  } else if (s.mode === "translate") {
+    card.innerHTML = `
+      <div class="prompt-label">Dilo en polaco</div>
+      <div class="es-big">${esc(d.es)}</div>
+      <div class="audio-row"><button class="btn btn-small" id="hintBtn" type="button">💡 Pista</button></div>
+      <div id="hintBox" class="es-small"></div>
+      <div id="answerArea"></div>
+      <div class="feedback" id="feedback"></div>`;
+    let hintLevel = 0;
+    $("hintBtn").addEventListener("click", () => {
+      hintLevel++;
+      const words = d.pl.split(/\s+/);
+      const shown = hintLevel === 1 ? words.slice(0, Math.max(1, Math.ceil(words.length / 3))).join(" ") + " …" : d.pl;
+      $("hintBox").innerHTML = `<b>${esc(shown)}</b>` + (hintLevel > 1 ? phonHtml(d.pl) : "");
+      if (hintLevel > 1) $("hintBtn").disabled = true;
+    });
+    renderMic("Toca 🎤 y di la frase en polaco", "No sé — ver respuesta");
+  } else {
+    const opts = listenOptions(d);
+    card.innerHTML = `
+      <div class="prompt-label">¿Qué significa lo que escuchas?</div>
+      <div class="audio-row">
+        <button class="big-play" id="playBtn" type="button" aria-label="Escuchar">🔊</button>
+      </div>
+      <div class="audio-row"><button class="btn btn-small" id="slowBtn" type="button">🐢 Despacio</button></div>
+      <div class="choices" id="choices">${opts.map((o, k) => `<button class="choice" data-k="${k}" type="button">${esc(o.es)}</button>`).join("")}</div>
+      <div id="revealBox"></div>
+      <div id="answerArea"></div>
+      <div class="feedback" id="feedback"></div>`;
+    bindAudio(d);
+    $("choices").addEventListener("click", (e) => {
+      const b = e.target.closest(".choice");
+      if (!b || checked) return;
+      const pick = opts[Number(b.dataset.k)];
+      const ok = pick.es === d.es;
+      document.querySelectorAll("#choices .choice").forEach((x, k) => {
+        x.disabled = true;
+        if (opts[k].es === d.es) x.classList.add("right");
+      });
+      if (!ok) b.classList.add("wrong");
+      commitResult(ok, null);
+      $("revealBox").innerHTML = `<div style="margin-top:14px"><div class="pl-big" style="font-size:1.4rem">${wordsHtml(d.pl)}</div>${phonHtml(d.pl)}</div>`;
+      renderMic("Opcional: toca 🎤 y repítela", null);
+      renderFeedback(null, ok);
+    });
+    if (settings.autoplay) setTimeout(() => speak(d.pl, { btn: "playBtn" }), 250);
+  }
+}
+
+function listenOptions(d) {
+  const seen = new Set([d.es]);
+  const pick = [];
+  const add = (x) => { if (pick.length < 3 && !seen.has(x.es)) { seen.add(x.es); pick.push(x); } };
+  shuffle(session.pool).forEach(add);
+  if (pick.length < 3) shuffle(allDrills()).forEach(add);
+  return shuffle([d].concat(pick));
+}
+
+function bindAudio(d) {
+  const p = $("playBtn"), sl = $("slowBtn");
+  if (p) p.addEventListener("click", () => speak(d.pl, { btn: "playBtn" }));
+  if (sl) sl.addEventListener("click", () => speak(d.pl, { slow: true, btn: "slowBtn" }));
+}
+
+function renderMic(label, skipLabel) {
+  const area = $("answerArea");
+  if (!SR) {
+    // Sin reconocimiento de voz (p. ej. Firefox): autoevaluación
+    area.innerHTML = `<div class="speak-box">
+      <p class="speak-status">Tu navegador no reconoce voz (prueba Chrome, Edge o Safari). Di la frase en voz alta y evalúate tú:</p>
+      ${checked ? "" : `<div class="self-row">
+        <button class="btn" id="selfOk" type="button">✅ Me salió bien</button>
+        <button class="btn" id="selfBad" type="button">❌ Me costó</button>
+      </div>`}</div>`;
+    const ok = $("selfOk"), bad = $("selfBad");
+    const done = (v) => { if (checked) return; commitResult(v, null); renderSelfFeedback(v); };
+    if (ok) ok.addEventListener("click", () => done(true));
+    if (bad) bad.addEventListener("click", () => done(false));
+    return;
+  }
+  area.innerHTML = `<div class="speak-box">
+      <button class="mic-btn" id="micBtn" type="button" aria-label="Hablar">🎤</button>
+      <div class="speak-status" id="speakStatus">${esc(label)}</div>
+      ${skipLabel ? `<button class="btn btn-small" id="skipBtn" type="button">${esc(skipLabel)}</button>` : ""}
+    </div>`;
+  $("micBtn").addEventListener("click", startSpeech);
+  const sk = $("skipBtn");
+  if (sk) sk.addEventListener("click", () => {
+    if (checked) return;
+    commitResult(false, null);
+    renderFeedback({ words: null, heard: "", target: currentDrill().pl, skipped: true }, false);
+    speak(currentDrill().pl);
+  });
+}
+
+function renderSelfFeedback(ok) {
+  const d = currentDrill();
+  const area = $("answerArea");
+  if (area) area.innerHTML = "";
+  renderFeedback(null, ok);
+  if (session.mode === "translate") speak(d.pl);
+}
+
+function onHeard(alts) {
+  const d = currentDrill();
+  if (!d) return;
+  const r = scoreAttempt(d, alts.length ? alts : [""]);
+  const first = !checked;
+  if (first) {
+    commitResult(r.pass, r);
+    if (session.mode === "listen") { renderFeedback(null, session.lastOk, r); return; }
+  }
+  renderFeedback(r, first ? r.pass : null);
+}
+
+function commitResult(ok, r) {
+  const s = session, d = currentDrill();
+  checked = true;
+  s.lastOk = ok;
+  s.answered++;
+  if (ok) s.correct++;
+  else s.mistakes.push(d);
+  if (d.structId) {
+    const st = stats[d.structId] || (stats[d.structId] = { c: 0, n: 0 });
+    st.n++; if (ok) st.c++; st.last = Date.now();
+    saveStats();
+  }
+  srsRecord(d, ok);
+  if (r && r.words && normPl(r.heard)) {
+    r.words.forEach((w) => soundCats(w.w).forEach((cat) => {
+      const x = soundStats[cat] || (soundStats[cat] = { c: 0, n: 0 });
+      x.n++;
+      if (w.status === "ok") x.c++;
+      else s.soundMiss[cat] = (s.soundMiss[cat] || 0) + 1;
+    }));
+    saveSounds();
+  }
+  $("drillScore").textContent = `${s.correct}/${s.answered} bien`;
+}
+
+// r = resultado del reconocimiento (o null); ok = resultado que cuenta (null = intento extra)
+function renderFeedback(r, ok, extra) {
+  const d = currentDrill();
+  const fb = $("feedback");
+  if (!fb) return;
+  const isRetry = ok === null;
+  let cls, title;
+  const heardNorm = r && r.heard ? normPl(r.heard) : "";
+  if (r && r.skipped) { cls = "fb-neutral"; title = "Esta es la respuesta: escúchala y repítela 🎤"; }
+  else if (r && r.words) {
+    const pct = Math.round(r.score * 100);
+    cls = r.pass ? "fb-good" : "fb-bad";
+    title = r.pass ? (pct === 100 ? "✓ ¡Perfecto! " : "✓ ¡Bien! ") + pct + "%" : "✗ Casi — " + pct + "%. Repite las palabras marcadas";
+  } else { cls = ok ? "fb-good" : "fb-bad"; title = ok ? "✓ ¡Correcto!" : "✗ No era esa"; }
+
+  let html = `<div class="fb ${cls}"><div class="fb-title">${title}</div>`;
+  const showWords = r && r.words && heardNorm;
+  if (showWords) {
+    html += `<div class="fb-words">${wordsHtml(r.target, r.words.map((w) => "w-" + w.status))}</div>`;
+    html += `<div class="fb-line"><i>Te entendí:</i> «${esc(r.heard)}»</div>`;
+    const bad = r.words.filter((w) => w.status !== "ok");
+    if (bad.length) {
+      html += bad.slice(0, 4).map((w) => `<div class="fb-line">• <b>${esc(w.disp.replace(/[.,!?]/g, ""))}</b> <i>(${esc(phon(w.w))})</i> — ${w.heard ? "oí «" + esc(w.heard) + "»" : "no la escuché"}</div>`).join("");
+      const cats = new Set();
+      bad.forEach((w) => soundCats(w.w).forEach((c) => cats.add(c)));
+      if (cats.size) html += `<div class="fb-tips">${Array.from(cats).slice(0, 3).map((c) =>
+        `<div class="tip"><b>${esc(SOUND_BY_ID[c].letters)}</b> — ${esc(SOUND_BY_ID[c].tip)}</div>`).join("")}</div>`;
+    }
+  } else if (r && r.words && !heardNorm) {
+    html += `<div class="fb-line">No entendí ninguna palabra. Acércate al micrófono y vuelve a intentarlo.</div>`;
+  }
+  if (session.mode === "translate" || (r && r.skipped)) {
+    html += `<div class="fb-line" style="margin-top:10px;font-size:1.15rem"><b>${wordsHtml(d.pl)}</b></div>${phonHtml(d.pl)}`;
+  }
+  if (session.mode === "listen" && !extra) html += `<div class="fb-line">«${esc(d.pl)}» = ${esc(d.es)}</div>`;
+  html += `<div class="fb-actions">
+      <button class="btn btn-small" id="fbNative" type="button">🔊 Nativo</button>
+      <button class="btn btn-small" id="fbSlow" type="button">🐢</button>
+      ${SR && settings.record && window.MediaRecorder ? `<button class="btn btn-small" id="myVoiceBtn" type="button" ${myVoiceUrl && showWords ? "" : "disabled"}>▶️ Mi voz</button>` : ""}
+      <button class="btn btn-primary" id="nextBtn" type="button">Siguiente →</button>
+    </div>`;
+  if (isRetry || (SR && checked)) html += `<div class="fb-note">Puedes tocar 🎤 otra vez para practicar — solo cuenta el primer intento. Enter = siguiente.</div>`;
+  html += `</div>`;
+  fb.innerHTML = html;
+  if (!showWords && $("myVoiceBtn")) $("myVoiceBtn").disabled = true;
+  if (showWords && !myVoiceUrl && $("myVoiceBtn")) $("myVoiceBtn").disabled = true;
+  $("fbNative").addEventListener("click", () => speak(d.pl, { btn: "fbNative" }));
+  $("fbSlow").addEventListener("click", () => speak(d.pl, { slow: true, btn: "fbSlow" }));
+  if ($("myVoiceBtn")) $("myVoiceBtn").addEventListener("click", playMyVoice);
+  $("nextBtn").addEventListener("click", nextDrill);
+  if (SR && $("speakStatus") && session.mode !== "listen") setStatus("Toca 🎤 para intentarlo otra vez", "");
+  if (SR && $("speakStatus") && session.mode === "listen") setStatus("Opcional: toca 🎤 y repítela", "");
+  if (r && r.skipped) { const sk = $("skipBtn"); if (sk) sk.remove(); }
+  const sk2 = $("skipBtn"); if (sk2 && checked) sk2.remove();
+  $("nextBtn").focus({ preventScroll: true });
+}
+
+function nextDrill() {
+  if (!session) return;
+  if (myVoiceUrl) { URL.revokeObjectURL(myVoiceUrl); myVoiceUrl = null; }
+  session.idx++;
+  renderDrill();
+}
+
+function finishSession() {
+  const s = session;
+  if (s.answered) {
+    sessionLog.push({ t: Date.now(), title: s.title, c: s.correct, n: s.answered });
+    saveLog();
+  }
+  const pct = s.answered ? Math.round((s.correct / s.answered) * 100) : 0;
+  $("doneBadge").textContent = s.badge;
+  $("doneTitle").textContent = s.title;
+  $("donePct").textContent = pct + "%";
+  $("doneRing").style.background = `conic-gradient(${pctColor(pct)} ${pct * 3.6}deg, var(--track) 0deg)`;
+  $("doneMsg").textContent = !s.answered ? "No respondiste ninguna frase." :
+    pct >= 90 ? "¡Excelente! Esta estructura ya te sale sola. 🎉" :
+    pct >= 70 ? "¡Muy bien! Una vuelta más y la tienes automatizada." :
+    pct >= 45 ? "Vas avanzando. Repite la sesión: la repetición es la clave." :
+    "Es normal al principio. Usa 🐢 «Despacio» y el modo «Escucha y repite».";
+
+  const cats = Object.keys(s.soundMiss).sort((a, b) => s.soundMiss[b] - s.soundMiss[a]).slice(0, 4);
+  $("doneSounds").innerHTML = cats.length ? `<div class="sub">Sonidos para practicar</div><div class="chips">${cats.map((c) =>
+    `<button class="chip" data-sound="${c}" type="button">${esc(SOUND_BY_ID[c].letters)} · ${esc(SOUND_BY_ID[c].title)}</button>`).join("")}</div>` : "";
+
+  const seen = new Set();
+  const uniq = s.mistakes.filter((d) => !seen.has(d.pl) && seen.add(d.pl));
+  $("doneList").innerHTML = uniq.length ? `<div class="sub">Frases que te costaron${s.mistakes[0] && s.mistakes[0].noSrs ? "" : " (volverán en el repaso de mañana)"}</div>` + uniq.map((d, k) => `
+    <div class="done-item">
+      <button class="btn btn-small" data-say-idx="${k}" type="button">🔊</button>
+      <div class="t"><div>${esc(d.pl)}</div><small><i>${esc(phon(d.pl))}</i> · ${esc(d.es)}</small></div>
+    </div>`).join("") : "";
+  $("doneList").onclick = (e) => { const b = e.target.closest("[data-say-idx]"); if (b) speak(uniq[Number(b.dataset.sayIdx)].pl); };
+  $("doneRepeat").hidden = !lastStart;
+  switchView("done");
+}
+
+/* =========================================================================
+   SONIDOS
+   ========================================================================= */
+let pairsQuiz = null;
+function renderSounds() {
+  document.querySelectorAll(".snd-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === prefs.soundTab));
+  const body = $("soundsBody");
+  if (prefs.soundTab === "guide") {
+    body.innerHTML = `
+      <div class="card">
+        <h3 style="margin:0 0 4px">Cómo leer la pronunciación figurada 🗣️</h3>
+        <p class="muted" style="margin:0 0 10px">Debajo de cada frase verás cómo se pronuncia, escrito para hispanohablantes. Toca cada sonido para escuchar un ejemplo.</p>
+        <div class="legend">${LEGEND.map((l) => `<button class="legend-item" data-say="${esc(l[2])}" type="button"><b>${esc(l[0])}</b> ${esc(l[1])}<br><small class="muted">${esc(l[2])} → <i>${esc(phon(l[2]))}</i></small></button>`).join("")}</div>
+      </div>
+      ${SOUNDS.map((s) => `
+      <div class="card sound-card" id="snd-${s.id}">
+        <div class="sound-head"><span class="sound-letters">${esc(s.letters)}</span><h3>${esc(s.title)}</h3></div>
+        <div class="sound-desc">${esc(s.desc)}</div>
+        <div class="ex-grid">${s.examples.map((e) => `<button class="ex" data-say="${esc(e[1])}" type="button"><b>${esc(e[1])}</b><i>${esc(phon(e[1]))}</i><small>${esc(e[0])}</small></button>`).join("")}</div>
+        ${s.pairs.length ? `<div class="sub">Pares mínimos — escucha la diferencia</div>${s.pairs.map((p) => `
+          <div class="pair-row">
+            <button class="chip" data-say="${esc(p[0])}" type="button">🔊 ${esc(p[0])} <small class="muted">(${esc(p[2])})</small></button>
+            <span class="vs">≠</span>
+            <button class="chip" data-say="${esc(p[1])}" type="button">🔊 ${esc(p[1])} <small class="muted">(${esc(p[3])})</small></button>
+          </div>`).join("")}` : ""}
+        ${s.info ? "" : `<div class="sound-actions"><button class="btn btn-primary btn-small" data-practice="${s.id}" type="button">🎤 Practicar estas palabras</button>
+          ${statLine(s.id)}</div>`}
+      </div>`).join("")}`;
+  } else if (prefs.soundTab === "pairs") {
+    if (!pairsQuiz) newPairsQuiz();
+    renderPairs();
+  } else {
+    body.innerHTML = `
+      <div class="card">
+        <p class="muted" style="margin-top:0">Los trabalenguas polacos son famosos. Escúchalos despacio, repítelos por partes y luego intenta decirlos completos.</p>
+        <div class="done-list">${TWISTERS.map((t) => `
+          <div class="done-item">
+            <button class="btn btn-small" data-say="${esc(t[1])}" type="button">🔊</button>
+            <button class="btn btn-small" data-say-slow="${esc(t[1])}" type="button">🐢</button>
+            <div class="t"><div>${esc(t[1])}</div><small><i>${esc(phon(t[1]))}</i></small><small>${esc(t[0])}</small></div>
+          </div>`).join("")}</div>
+        <button class="btn btn-primary" id="twisterGo" type="button">🎤 Practicar trabalenguas</button>
+      </div>`;
+    $("twisterGo").addEventListener("click", () => startCustom("twister"));
+  }
+}
+function statLine(cat) {
+  const x = soundStats[cat];
+  if (!x || x.n < 3) return "";
+  const p = Math.round((x.c / x.n) * 100);
+  return `<span class="muted">Tu precisión: <b style="color:${pctColor(p)}">${p}%</b> (${x.n} palabras)</span>`;
+}
+
+function newPairsQuiz() {
+  const all = [];
+  SOUNDS.forEach((s) => s.pairs.forEach((p) => all.push({ cat: s.id, p })));
+  const rounds = shuffle(all).concat(shuffle(all)).slice(0, 12).map((x) => {
+    const which = Math.random() < 0.5 ? 0 : 1;
+    return { cat: x.cat, p: x.p, ans: which, opts: shuffle([0, 1]) };
+  });
+  pairsQuiz = { rounds, i: 0, ok: 0, answered: false };
+}
+function renderPairs() {
+  const q = pairsQuiz, body = $("soundsBody");
+  if (q.i >= q.rounds.length) {
+    const pct = Math.round((q.ok / q.rounds.length) * 100);
+    body.innerHTML = `<div class="done-card"><h2>Pares mínimos</h2>
+      <div class="done-ring" style="background:conic-gradient(${pctColor(pct)} ${pct * 3.6}deg, var(--track) 0deg)"><div class="done-ring-inner"><span class="done-pct">${q.ok}/${q.rounds.length}</span><span class="done-pct-label">aciertos</span></div></div>
+      <p>${pct >= 80 ? "¡Tu oído ya distingue estos sonidos! 👂" : "Escucha otra vez las parejas en la Guía y vuelve a intentarlo."}</p>
+      <button class="btn btn-primary" id="pairsAgain" type="button">Otra ronda</button></div>`;
+    $("pairsAgain").addEventListener("click", () => { newPairsQuiz(); renderPairs(); });
+    return;
+  }
+  const r = q.rounds[q.i];
+  const word = r.p[r.ans];
+  body.innerHTML = `<div class="card">
+    <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${(q.i / q.rounds.length) * 100}%"></div></div>
+      <div class="progress-meta"><span>${q.i + 1} / ${q.rounds.length}</span><span>${q.ok} bien</span></div></div>
+    <div class="prompt-label">¿Qué palabra escuchas?</div>
+    <div class="audio-row"><button class="big-play" id="pairPlay" type="button" aria-label="Escuchar">🔊</button></div>
+    <div class="audio-row"><button class="btn btn-small" id="pairSlow" type="button">🐢 Despacio</button></div>
+    <div class="pairs-opts">${r.opts.map((k) => `<button class="choice" data-k="${k}" type="button"><b>${esc(r.p[k])}</b><i>${esc(phon(r.p[k]))}</i><small>${esc(r.p[k + 2])}</small></button>`).join("")}</div>
+    <div class="feedback" id="pairFb"></div></div>`;
+  $("pairPlay").addEventListener("click", () => speak(word, { btn: "pairPlay" }));
+  $("pairSlow").addEventListener("click", () => speak(word, { slow: true }));
+  q.answered = false;
+  body.querySelector(".pairs-opts").addEventListener("click", (e) => {
+    const b = e.target.closest(".choice");
+    if (!b || q.answered) return;
+    q.answered = true;
+    const ok = Number(b.dataset.k) === r.ans;
+    if (ok) q.ok++;
+    const x = soundStats[r.cat] || (soundStats[r.cat] = { c: 0, n: 0 });
+    x.n++; if (ok) x.c++; saveSounds();
+    body.querySelectorAll(".pairs-opts .choice").forEach((c) => { c.disabled = true; if (Number(c.dataset.k) === r.ans) c.classList.add("right"); });
+    if (!ok) b.classList.add("wrong");
+    const s = SOUND_BY_ID[r.cat];
+    $("pairFb").innerHTML = `<div class="fb ${ok ? "fb-good" : "fb-bad"}"><div class="fb-title">${ok ? "✓ ¡Bien!" : "✗ Era «" + esc(word) + "»"}</div>
+      <div class="tip"><b>${esc(s.letters)}</b> — ${esc(s.tip)}</div>
+      <div class="fb-actions">
+        <button class="btn btn-small" data-say="${esc(r.p[0])}" type="button">🔊 ${esc(r.p[0])}</button>
+        <button class="btn btn-small" data-say="${esc(r.p[1])}" type="button">🔊 ${esc(r.p[1])}</button>
+        <button class="btn btn-primary" id="pairNext" type="button">Siguiente →</button></div></div>`;
+    $("pairNext").addEventListener("click", () => { q.i++; renderPairs(); });
+    $("pairNext").focus({ preventScroll: true });
+  });
+  setTimeout(() => speak(word, { btn: "pairPlay" }), 250);
+}
+
+/* =========================================================================
+   PROGRESO Y AJUSTES
+   ========================================================================= */
+function renderProgress() {
+  const totN = Object.values(stats).reduce((a, s) => a + s.n, 0);
+  const totC = Object.values(stats).reduce((a, s) => a + s.c, 0);
+  const acc = totN ? Math.round((totC / totN) * 100) + "%" : "—";
+  const cats = Object.keys(soundStats).filter((c) => SOUND_BY_ID[c] && soundStats[c].n >= 3)
+    .map((c) => ({ c, p: Math.round((soundStats[c].c / soundStats[c].n) * 100), n: soundStats[c].n }))
+    .sort((a, b) => a.p - b.p);
+  const structs = [];
+  LEVELS.forEach((lv) => lv.structures.forEach((st) => { if (stats[st.id]) structs.push({ st, s: stats[st.id] }); }));
+  const voice = pickPolishVoice();
+  const opt = (key, val, label) => `<button class="len-opt set-btn${settings[key] === val ? " active" : ""}" data-key="${key}" data-val="${val}" type="button">${label}</button>`;
+
+  $("progressBody").innerHTML = `
+    <div class="stat-tiles">
+      <div class="stat-tile"><b>🔥 ${streak()}</b><span>días seguidos</span></div>
+      <div class="stat-tile"><b>${totN}</b><span>frases dichas</span></div>
+      <div class="stat-tile"><b>${acc}</b><span>aciertos</span></div>
+      <div class="stat-tile"><b>${srsDue().length}</b><span>para repasar hoy</span></div>
+    </div>
+
+    <div class="panel"><h3>🔤 Tus sonidos</h3>
+      ${cats.length ? cats.map((x) => `<div class="bar-row">
+          <span><b>${esc(SOUND_BY_ID[x.c].letters)}</b> <small class="muted">${esc(SOUND_BY_ID[x.c].title)}</small></span>
+          <div class="bar"><div style="width:${x.p}%;background:${pctColor(x.p)}"></div></div>
+          <b>${x.p}%</b>
+          <button class="btn btn-small" data-practice="${x.c}" type="button">Practicar</button>
+        </div>`).join("") : `<p class="muted">Cuando practiques con el micrófono, aquí verás qué sonidos te cuestan más (sz, rz, ł, y…).</p>`}
+    </div>
+
+    <div class="panel"><h3>🗣️ Por tema</h3>
+      ${structs.length ? structs.map(({ st, s }) => { const p = Math.round((s.c / s.n) * 100); return `<div class="bar-row">
+          <span>${esc(st.title)}</span>
+          <div class="bar"><div style="width:${p}%;background:${pctColor(p)}"></div></div>
+          <b>${p}%</b>
+          <button class="btn btn-small" data-struct="${st.id}" type="button">Practicar</button>
+        </div>`; }).join("") : `<p class="muted">Todavía no practicaste ningún tema.</p>`}
+    </div>
+
+    <div class="panel"><h3>📅 Últimas sesiones</h3>
+      ${sessionLog.length ? sessionLog.slice(-8).reverse().map((e) => `<div class="log-row"><span>${esc(e.title)}</span><span class="muted">${e.c}/${e.n} · ${new Date(e.t).toLocaleDateString("es", { day: "numeric", month: "short" })}</span></div>`).join("") : `<p class="muted">Aún no hay sesiones.</p>`}
+    </div>
+
+    <div class="panel"><h3>⚙️ Ajustes</h3>
+      <div class="set-row"><div>Velocidad de la voz<small>Normal para el oído, despacio para empezar</small></div>
+        <div class="switch">${opt("rate", 0.75, "Lenta")}${opt("rate", 0.9, "Normal")}${opt("rate", 1, "Rápida")}</div></div>
+      <div class="set-row"><div>Pronunciación figurada<small>Mostrar «psheprásham» debajo de cada frase</small></div>
+        <div class="switch">${opt("phon", true, "Sí")}${opt("phon", false, "No")}</div></div>
+      <div class="set-row"><div>Reproducir automáticamente<small>Escuchar la frase al aparecer</small></div>
+        <div class="switch">${opt("autoplay", true, "Sí")}${opt("autoplay", false, "No")}</div></div>
+      <div class="set-row"><div>Grabar mi voz<small>Para comparar tu voz con la del nativo (▶️ Mi voz)</small></div>
+        <div class="switch">${opt("record", true, "Sí")}${opt("record", false, "No")}</div></div>
+      <div class="set-row"><div>Voz polaca<small>${voice ? esc(voice.name) + " (" + esc(voice.lang) + ")" : "No encontrada — se usará la voz por defecto del navegador"}</small></div>
+        <button class="btn btn-small" id="voiceTest" type="button">🔊 Probar</button></div>
+      <div class="set-row"><div>Micrófono<small>${SR ? "Reconocimiento de voz disponible ✓" : "Este navegador no reconoce voz. Usa Chrome, Edge o Safari."}</small></div></div>
+      <div class="set-row"><div>Borrar progreso<small>Estadísticas, repasos y sesiones</small></div>
+        <button class="btn btn-small" id="resetBtn" type="button">Borrar…</button></div>
+    </div>`;
+
+  $("voiceTest").addEventListener("click", () => speak("Dzień dobry! Miło mi. Mówię po polsku.", { btn: "voiceTest" }));
+  $("resetBtn").addEventListener("click", (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed) {
+      stats = {}; soundStats = {}; srs = {}; sessionLog = [];
+      saveStats(); saveSounds(); saveSrs(); saveLog();
+      renderProgress(); toast("Progreso borrado.");
+    } else { b.dataset.armed = "1"; b.textContent = "¿Seguro? Toca otra vez"; }
+  });
+}
+
+/* =========================================================================
+   EVENTOS
+   ========================================================================= */
+document.querySelectorAll(".section-btn").forEach((b) => b.addEventListener("click", () => showSection(b.dataset.section)));
+document.querySelectorAll(".len-btn").forEach((b) => b.addEventListener("click", () => { prefs.len = Number(b.dataset.len); savePrefs(); renderPhrasesHome(); }));
+document.querySelectorAll(".mode-btn").forEach((b) => b.addEventListener("click", () => { prefs.mode = b.dataset.mode; savePrefs(); renderPhrasesHome(); }));
+document.querySelectorAll(".snd-tab").forEach((b) => b.addEventListener("click", () => { prefs.soundTab = b.dataset.tab; savePrefs(); if (b.dataset.tab === "pairs") newPairsQuiz(); renderSounds(); }));
+$("levelTabs").addEventListener("click", (e) => { const b = e.target.closest(".level-tab"); if (b) { prefs.level = b.dataset.level; savePrefs(); renderPhrasesHome(); } });
+
+// Delegación global: escuchar palabras, practicar sonidos, abrir temas, ajustes
+document.addEventListener("click", (e) => {
+  const say = e.target.closest("[data-say]");
+  if (say) { speak(say.dataset.say, { slow: say.classList.contains("word") }); return; }
+  const slow = e.target.closest("[data-say-slow]");
+  if (slow) { speak(slow.dataset.saySlow, { slow: true }); return; }
+  const pr = e.target.closest("[data-practice]");
+  if (pr) { startCustom("sound", pr.dataset.practice); return; }
+  const snd = e.target.closest("[data-sound]");
+  if (snd) {
+    prefs.soundTab = "guide"; savePrefs(); showSection("sounds");
+    const el = $("snd-" + snd.dataset.sound); if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    return;
+  }
+  const st = e.target.closest("[data-struct]");
+  if (st) { startStructure(st.dataset.struct); return; }
+  const set = e.target.closest(".set-btn");
+  if (set) {
+    const k = set.dataset.key, raw = set.dataset.val;
+    settings[k] = raw === "true" ? true : raw === "false" ? false : Number(raw);
+    saveSettings(); renderProgress();
+  }
+});
+
+$("drillBack").addEventListener("click", () => { if (window.speechSynthesis) window.speechSynthesis.cancel(); session = null; showSection(currentSection); });
+$("drillEnd").addEventListener("click", () => { if (window.speechSynthesis) window.speechSynthesis.cancel(); if (session) finishSession(); });
+$("doneRepeat").addEventListener("click", () => { if (lastStart) lastStart(); });
+$("doneHome").addEventListener("click", () => showSection(currentSection));
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" || e.target.closest("input, textarea")) return;
+  if ($("view-drill").classList.contains("active") && checked) {
+    e.preventDefault();
+    nextDrill();
+  }
+});
+
+// Tema claro / oscuro
+function effectiveDark() {
+  const t = document.documentElement.getAttribute("data-theme");
+  if (t) return t === "dark";
+  return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+function applyTheme(t) {
+  if (t) document.documentElement.setAttribute("data-theme", t); else document.documentElement.removeAttribute("data-theme");
+  $("themeToggle").textContent = effectiveDark() ? "☀️" : "🌙";
+}
+applyTheme(lsGet(K.theme));
+$("themeToggle").addEventListener("click", () => { const t = effectiveDark() ? "light" : "dark"; lsSet(K.theme, t); applyTheme(t); });
+
+showSection("phrases");
+</script>
+</body>
+</html>
