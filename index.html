@@ -1640,27 +1640,44 @@ let recorder = null, recStream = null, recChunks = [], myVoiceUrl = null;
 function startRecorder(stream) {
   recStream = stream;
   try {
-    recChunks = [];
-    recorder = new MediaRecorder(stream);
-    recorder.ondataavailable = (e) => { if (e.data && e.data.size) recChunks.push(e.data); };
-    recorder.onstop = () => {
-      if (recChunks.length) {
-        if (myVoiceUrl) URL.revokeObjectURL(myVoiceUrl);
-        myVoiceUrl = URL.createObjectURL(new Blob(recChunks, { type: recorder.mimeType || "audio/webm" }));
-        const b = $("myVoiceBtn"); if (b) b.disabled = false;
+    // Variables locales: el evento «stop» llega después de que stopRecorder() ya limpió «recorder».
+    const rec = new MediaRecorder(stream);
+    const chunks = [];
+    rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      try {
+        if (chunks.length) {
+          if (myVoiceUrl) URL.revokeObjectURL(myVoiceUrl);
+          myVoiceUrl = URL.createObjectURL(new Blob(chunks, { type: rec.mimeType || chunks[0].type || "audio/webm" }));
+          const b = $("myVoiceBtn"); if (b) b.disabled = false;
+        }
+      } finally {
+        stream.getTracks().forEach((t) => t.stop());   // apaga el micrófono
+        if (recStream === stream) recStream = null;
       }
-      stopStream();
     };
-    recorder.start();
+    recorder = rec;
+    rec.start();
   } catch (e) { recorder = null; stopStream(); }
 }
 function stopStream() { if (recStream) { recStream.getTracks().forEach((t) => t.stop()); recStream = null; } }
 function stopRecorder() {
-  if (recorder && recorder.state !== "inactive") { try { recorder.stop(); } catch (e) { stopStream(); } }
-  else stopStream();
+  const rec = recorder;
   recorder = null;
+  if (rec && rec.state !== "inactive") { try { rec.stop(); } catch (e) { stopStream(); } }
+  else stopStream();
 }
-function playMyVoice() { if (myVoiceUrl) { try { new Audio(myVoiceUrl).play(); } catch (e) {} } }
+let myVoiceAudio = null;
+function playMyVoice() {
+  if (!myVoiceUrl) return;
+  stopSpeech();
+  if (myVoiceAudio) myVoiceAudio.pause();
+  const btn = $("myVoiceBtn");
+  myVoiceAudio = new Audio(myVoiceUrl);
+  if (btn) { btn.classList.add("speaking"); myVoiceAudio.onended = () => btn.classList.remove("speaking"); }
+  const p = myVoiceAudio.play();
+  if (p && p.catch) p.catch(() => { if (btn) btn.classList.remove("speaking"); toast("🔇 No se pudo reproducir tu grabación."); });
+}
 
 function setStatus(text, cls) {
   const el = $("speakStatus");
