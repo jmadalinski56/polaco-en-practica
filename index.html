@@ -1606,35 +1606,53 @@ function stopSpeech() { speakSeq++; if (window.speechSynthesis) window.speechSyn
 // así que separamos: frases → palabra por palabra; palabra suelta → sílabas y luego entera.
 async function speakSlow(text, btn, seq) {
   const words = text.split(/\s+/).filter((w) => /[\p{L}\d]/u.test(w));
-  const hl = (k) => {
+  const clean = (w) => w.replace(/[.,!?¿¡;:«»"]/g, "");
+  // Trozos para leer: una palabra de una sola letra (w, z, i, a, o, u) va SIEMPRE junto con la
+  // siguiente; sola, la voz la deletrea («duże W») en vez de pronunciarla.
+  const chunks = [];
+  for (let k = 0; k < words.length; k++) {
+    const idx = [k];
+    let t = clean(words[k]);
+    while (clean(words[idx[idx.length - 1]]).length === 1 && idx[idx.length - 1] + 1 < words.length) {
+      const nx = idx[idx.length - 1] + 1;
+      idx.push(nx);
+      t += " " + clean(words[nx]);
+    }
+    if (clean(words[k]).length === 1) t = t.charAt(0).toLowerCase() + t.slice(1);
+    chunks.push({ t, idx });
+    k = idx[idx.length - 1];
+  }
+  const hl = (on) => {
     const spans = document.querySelectorAll("#plText .word");
     if (spans.length !== words.length) return;
-    spans.forEach((s, j) => s.classList.toggle("reading", j === k));
+    spans.forEach((s, j) => s.classList.toggle("reading", on.indexOf(j) !== -1));
   };
   if (btn) btn.classList.add("speaking");
   try {
-    if (words.length > 1) {
-      for (let k = 0; k < words.length; k++) {
+    if (chunks.length > 1) {
+      for (const c of chunks) {
         if (seq !== speakSeq) return;
-        hl(k);
-        await sayOnce(words[k].replace(/[.,!?¿¡;:]/g, ""), 0.75, null);
+        hl(c.idx);
+        await sayOnce(c.t, 0.75, null);
         await pause(380);
       }
     } else {
-      const syl = plSyllables(words[0].replace(/[.,!?¿¡;:]/g, ""));
+      const one = chunks[0].t;
+      // una sola palabra: sílabas en minúscula (si no, «U» sola se lee «duże U») y luego la palabra entera
+      const syl = one.indexOf(" ") === -1 ? plSyllables(one) : [one];
       if (syl.length > 1) {
-        for (const s of syl) {
+        for (const sy of syl) {
           if (seq !== speakSeq) return;
-          await sayOnce(s, 0.7, null);
+          await sayOnce(sy.toLowerCase(), 0.7, null);
           await pause(420);
         }
         await pause(250);
       }
       if (seq !== speakSeq) return;
-      await sayOnce(words[0], 0.75, null);
+      await sayOnce(one.length === 1 ? one.toLowerCase() : one, 0.75, null);
     }
   } finally {
-    hl(-1);
+    hl([]);
     if (btn) btn.classList.remove("speaking");
   }
 }
