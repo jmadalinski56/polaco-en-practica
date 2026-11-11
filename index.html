@@ -1532,8 +1532,31 @@ let noVoiceWarned = false;
 let ttsCurrent = null;
 let speakSeq = 0;   // cada llamada nueva anula la lectura lenta anterior
 
+// Diario del micrófono (Progreso → Ajustes → Diagnóstico): ayuda a ver qué falla en cada teléfono.
+const micLog = [];
+let micT0 = 0;
+function mlog(ev) {
+  micLog.push((micT0 ? "+" + ((performance.now() - micT0) / 1000).toFixed(1) + "s " : "") + ev);
+  if (micLog.length > 60) micLog.splice(0, micLog.length - 60);
+}
+
+// iPhone/iPad: después de usar el micrófono, iOS deja el audio en modo «llamada» y la voz sale
+// por el auricular (casi inaudible) o no sale. Con la Audio Session API (Safari 16.4+, también
+// Chrome en iPhone) pedimos «playback» antes de hablar y «play-and-record» antes de escuchar.
+function setAudioSession(type) {
+  try {
+    if (navigator.audioSession && navigator.audioSession.type !== type) {
+      navigator.audioSession.type = type;
+      if (typeof mlog === "function") mlog("audioSession → " + type);
+    }
+  } catch (e) {}
+}
+
 // Una sola locución; devuelve una promesa que se resuelve al terminar.
 function sayOnce(text, rate, btn) {
+  setAudioSession("playback");
+  const synth = window.speechSynthesis;
+  if (synth.paused) { try { synth.resume(); } catch (e) {} }   // WebKit a veces queda en pausa
   return new Promise((resolve) => {
     const u = new SpeechSynthesisUtterance(text);
     const voice = pickPolishVoice();
@@ -1546,9 +1569,10 @@ function sayOnce(text, rate, btn) {
       }
     }
     u.rate = rate;
-    u.onstart = () => { if (btn) btn.classList.add("speaking"); };
-    u.onend = () => { if (btn) btn.classList.remove("speaking"); resolve(true); };
+    u.onstart = () => { mlog("voz: start «" + text.slice(0, 24) + "»"); if (btn) btn.classList.add("speaking"); };
+    u.onend = () => { mlog("voz: end"); if (btn) btn.classList.remove("speaking"); resolve(true); };
     u.onerror = (e) => {
+      mlog("voz: error " + (e && e.error));
       if (btn) btn.classList.remove("speaking");
       if (e && e.error && e.error !== "interrupted" && e.error !== "canceled" && e.error !== "not-allowed") toast("🔇 No se pudo reproducir el audio. Revisa el volumen y que tengas una voz polaca instalada.");
       resolve(false);
@@ -1738,17 +1762,11 @@ function killRecognition() {
   if (r) {
     r.onresult = r.onerror = r.onend = r.onspeechend = r.onaudiostart = null;
     try { r.abort(); } catch (e) {}
+    setAudioSession("playback");   // devolver el sonido al altavoz
   }
   const m = $("micBtn"); if (m) m.classList.remove("listening");
 }
 
-// Diario del micrófono (Progreso → Ajustes → Diagnóstico): ayuda a ver qué falla en cada teléfono.
-const micLog = [];
-let micT0 = 0;
-function mlog(ev) {
-  micLog.push((micT0 ? "+" + ((performance.now() - micT0) / 1000).toFixed(1) + "s " : "") + ev);
-  if (micLog.length > 60) micLog.splice(0, micLog.length - 60);
-}
 
 // IMPORTANTE (iPhone/iPad, en Safari y también en Chrome, que allí usa el mismo motor WebKit):
 // rec.start() tiene que llamarse en el mismo instante del toque, sin «await» ni pausas antes.
@@ -1767,6 +1785,7 @@ function startSpeech() {
   stopRecorder();
   const drillAtStart = currentDrill();
 
+  setAudioSession("play-and-record");
   const rec = new SR();   // objeto nuevo en cada intento
   rec.lang = "pl-PL";
   rec.interimResults = true;   // algunos móviles terminan sin resultado «final»: usamos el parcial
@@ -2588,7 +2607,7 @@ function renderProgress() {
       <div class="set-row"><div>Voz polaca<small>${voice ? esc(voice.name) + " (" + esc(voice.lang) + ")" : "No encontrada — se usará la voz por defecto del navegador"}</small></div>
         <button class="btn btn-small" id="voiceTest" type="button">🔊 Probar</button></div>
       <div class="set-row"><div>Micrófono<small>${SR ? "Reconocimiento de voz disponible ✓" : "Este navegador no reconoce voz. Usa Chrome, Edge o Safari."}</small></div></div>
-      <div class="set-row"><div>🔧 Diagnóstico del micrófono<small>Si el micrófono falla, haz una captura de pantalla de esto</small></div>
+      <div class="set-row"><div>🔧 Diagnóstico de micrófono y sonido<small>Si el micrófono o el sonido fallan, haz una captura de pantalla de esto</small></div>
         <button class="btn btn-small" id="micDiagBtn" type="button">Mostrar</button></div>
       <pre class="mic-diag" id="micDiag" hidden></pre>
       <div class="set-row"><div>Borrar progreso<small>Estadísticas, repasos y sesiones (tus palabras propias se conservan)</small></div>
@@ -2599,7 +2618,7 @@ function renderProgress() {
   $("micDiagBtn").addEventListener("click", () => {
     const el = $("micDiag");
     el.hidden = !el.hidden;
-    el.textContent = [navigator.userAgent, "iOS: " + IS_IOS + " · reconocimiento: " + (SR ? "sí" : "no") + " · grabar voz: " + settings.record, ""]
+    el.textContent = [navigator.userAgent, "iOS: " + IS_IOS + " · reconocimiento: " + (SR ? "sí" : "no") + " · grabar voz: " + settings.record + " · audioSession: " + (navigator.audioSession ? navigator.audioSession.type : "no") + " · voz: " + ((pickPolishVoice() || {}).name || "ninguna"), ""]
       .concat(micLog.length ? ["(lo más reciente arriba)"].concat(micLog.slice(-40).reverse()) : ["(todavía no se usó el micrófono)"]).join("\n");
   });
   $("resetBtn").addEventListener("click", (e) => {
