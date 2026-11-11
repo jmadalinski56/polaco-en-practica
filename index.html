@@ -247,7 +247,19 @@ button { font: inherit; color: inherit; }
 .pair-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
 .pair-row .vs { color: var(--muted); font-size: 0.85rem; }
 .sound-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
-.pairs-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.pairs-card { scroll-margin-top: 140px; padding: 14px; }
+.pairs-card .progress-wrap { margin-bottom: 8px; }
+.pairs-play { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.pairs-play .prompt-label { width: 100%; margin: 0; }
+.pairs-play .big-play { width: 68px; height: 68px; font-size: 1.8rem; }
+.pairs-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.pairs-opts .choice.answered { cursor: pointer; }
+.pair-fb { margin-top: 10px; border-radius: 12px; padding: 8px 12px; font-size: 0.88rem; display: grid; gap: 2px; }
+.pair-fb.good { background: var(--good-bg); color: var(--good); }
+.pair-fb.bad { background: var(--bad-bg); }
+.pair-fb.bad > b { color: var(--bad); }
+.pair-fb small { color: var(--muted); }
+.pair-next { width: 100%; margin-top: 10px; padding: 12px; scroll-margin-bottom: 16px; }
 .pairs-opts .choice { text-align: center; }
 .pairs-opts .choice b { display: block; font-size: 1.4rem; }
 .pairs-opts .choice i { font-weight: 500; font-size: 0.9rem; }
@@ -2458,20 +2470,25 @@ function renderPairs() {
   }
   const r = q.rounds[q.i];
   const word = r.p[r.ans];
-  body.innerHTML = `<div class="card">
+  body.innerHTML = `<div class="card pairs-card" id="pairsCard">
     <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${(q.i / q.rounds.length) * 100}%"></div></div>
       <div class="progress-meta"><span>${q.i + 1} / ${q.rounds.length}</span><span>${q.ok} bien</span></div></div>
-    <div class="prompt-label">¿Qué palabra escuchas?</div>
-    <div class="audio-row"><button class="big-play" id="pairPlay" type="button" aria-label="Escuchar">🔊</button></div>
-    <div class="audio-row"><button class="btn btn-small" id="pairSlow" type="button">🐢 Despacio</button></div>
+    <div class="pairs-play">
+      <span class="prompt-label">¿Qué palabra escuchas?</span>
+      <button class="big-play" id="pairPlay" type="button" aria-label="Escuchar">🔊</button>
+      <button class="btn btn-small" id="pairSlow" type="button" aria-label="Despacio">🐢</button>
+    </div>
     <div class="pairs-opts">${r.opts.map((k) => `<button class="choice" data-k="${k}" type="button"><b>${esc(r.p[k])}</b><i>${esc(phon(r.p[k]))}</i><small>${esc(r.p[k + 2])}</small></button>`).join("")}</div>
-    <div class="feedback" id="pairFb"></div></div>`;
+    <div id="pairFb"></div></div>`;
+  // en el teléfono: que la tarjeta quede entera en pantalla, justo debajo del menú fijo
+  if (q.i > 0) $("pairsCard").scrollIntoView({ block: "start" });
   $("pairPlay").addEventListener("click", () => speak(word, { btn: "pairPlay" }));
   $("pairSlow").addEventListener("click", () => speak(word, { slow: true }));
   q.answered = false;
   body.querySelector(".pairs-opts").addEventListener("click", (e) => {
     const b = e.target.closest(".choice");
-    if (!b || q.answered) return;
+    if (!b) return;
+    if (q.answered) { speak(r.p[Number(b.dataset.k)]); return; }   // después de responder: tocar = escuchar
     q.answered = true;
     const ok = Number(b.dataset.k) === r.ans;
     if (ok) q.ok++;
@@ -2480,14 +2497,16 @@ function renderPairs() {
     body.querySelectorAll(".pairs-opts .choice").forEach((c) => { c.disabled = true; if (Number(c.dataset.k) === r.ans) c.classList.add("right"); });
     if (!ok) b.classList.add("wrong");
     const s = SOUND_BY_ID[r.cat];
-    $("pairFb").innerHTML = `<div class="fb ${ok ? "fb-good" : "fb-bad"}"><div class="fb-title">${ok ? "✓ ¡Bien!" : "✗ Era «" + esc(word) + "»"}</div>
-      <div class="tip"><b>${esc(s.letters)}</b> — ${esc(s.tip)}</div>
-      <div class="fb-actions">
-        <button class="btn btn-small" data-say="${esc(r.p[0])}" type="button">🔊 ${esc(r.p[0])}</button>
-        <button class="btn btn-small" data-say="${esc(r.p[1])}" type="button">🔊 ${esc(r.p[1])}</button>
-        <button class="btn btn-primary" id="pairNext" type="button">Siguiente →</button></div></div>`;
+    body.querySelectorAll(".pairs-opts .choice").forEach((c) => { c.disabled = false; c.classList.add("answered"); });
+    $("pairFb").innerHTML = `<div class="pair-fb ${ok ? "good" : "bad"}">
+        <b>${ok ? "✓ ¡Bien!" : "✗ Era «" + esc(word) + "»"}</b>
+        ${ok ? "" : `<span><b>${esc(s.letters)}</b> — ${esc(s.tip)}</span>`}
+        <small>Toca cada palabra para comparar 🔊</small>
+      </div>
+      <button class="btn btn-primary pair-next" id="pairNext" type="button">Siguiente →</button>`;
     $("pairNext").addEventListener("click", () => { q.i++; renderPairs(); });
     $("pairNext").focus({ preventScroll: true });
+    $("pairNext").scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
   setTimeout(() => speak(word, { btn: "pairPlay" }), 250);
 }
@@ -2563,7 +2582,7 @@ function renderProgress() {
     const el = $("micDiag");
     el.hidden = !el.hidden;
     el.textContent = [navigator.userAgent, "iOS: " + IS_IOS + " · reconocimiento: " + (SR ? "sí" : "no") + " · grabar voz: " + settings.record, ""]
-      .concat(micLog.length ? micLog.slice(-40) : ["(todavía no se usó el micrófono)"]).join("\n");
+      .concat(micLog.length ? ["(lo más reciente arriba)"].concat(micLog.slice(-40).reverse()) : ["(todavía no se usó el micrófono)"]).join("\n");
   });
   $("resetBtn").addEventListener("click", (e) => {
     const b = e.currentTarget;
